@@ -1,15 +1,17 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
+import * as bcrypt from 'bcryptjs';
 import { Model } from 'mongoose';
 import { User, UserDocument } from '../models/user.schema';
-import * as bcrypt from 'bcryptjs';
 
 @Injectable()
 export class UserService {
   constructor(@InjectModel(User.name) private userModel: Model<UserDocument>) {}
 
   async createAdminIfNotExists() {
-    const existed = await this.userModel.findOne({ email: 'admin123@gmail.com' });
+    const existed = await this.userModel.findOne({
+      email: 'admin123@gmail.com',
+    });
     if (!existed) {
       const hash = await bcrypt.hash('123', 10); // Mã hóa mật khẩu
       const admin = new this.userModel({

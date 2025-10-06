@@ -1,4 +1,8 @@
-import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  BadRequestException,
+} from '@nestjs/common';
 import { UserService } from './user.service';
 import * as bcrypt from 'bcryptjs';
 import { JwtService } from '@nestjs/jwt';
@@ -28,7 +32,12 @@ export class AuthService {
     };
   }
 
-  async register(data: { email: string, full_name: string, password: string, major_id: string }) {
+  async register(data: {
+    email: string;
+    full_name: string;
+    password: string;
+    major_id: string;
+  }) {
     const existed = await this.userService.findByEmail(data.email);
     if (existed) throw new BadRequestException('Email đã tồn tại');
     const hash = await bcrypt.hash(data.password, 10);

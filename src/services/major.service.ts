@@ -5,7 +5,9 @@ import { Major, MajorDocument } from '../models/major.schema';
 
 @Injectable()
 export class MajorService {
-  constructor(@InjectModel(Major.name) private majorModel: Model<MajorDocument>) {}
+  constructor(
+    @InjectModel(Major.name) private majorModel: Model<MajorDocument>,
+  ) {}
 
   async createDefaultMajors() {
     const majors = [
@@ -15,7 +17,9 @@ export class MajorService {
     ];
 
     for (const major of majors) {
-      const existed = await this.majorModel.findOne({ major_id: major.major_id });
+      const existed = await this.majorModel.findOne({
+        major_id: major.major_id,
+      });
       if (!existed) {
         await new this.majorModel(major).save();
       }

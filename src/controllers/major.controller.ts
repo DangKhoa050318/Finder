@@ -10,4 +10,3 @@ export class MajorController {
     return this.majorService.getAll();
   }
 }
-
