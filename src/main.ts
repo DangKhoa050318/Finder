@@ -4,6 +4,8 @@ import { UserService } from './services/user.service';
 import { MajorService } from './services/major.service';
 import { CourseService } from './services/course.service';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { GlobalModule } from './shared/global.module';
+import { ConfigService } from './shared/config.service';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -24,9 +26,19 @@ async function bootstrap() {
     .setDescription('API documentation')
     .setVersion('1.0')
     .build();
-  const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api', app, document);
 
-  await app.listen(3000);
+  const cfg = app.select(GlobalModule).get(ConfigService);
+  app.setGlobalPrefix(cfg.env.prefix);
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup(cfg.env.swaggerPath, app, document);
+
+  await app.listen(cfg.env.port, () => {
+    console.log(
+      `🚀[SERVER] Documentation http://localhost:${cfg.env.port}${cfg.env.swaggerPath}`,
+    );
+    console.log(
+      `🚀[SERVER] Running on http://localhost:${cfg.env.port}${cfg.env.prefix}`,
+    );
+  });
 }
 bootstrap();

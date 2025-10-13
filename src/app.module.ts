@@ -1,43 +1,52 @@
 import { Module } from '@nestjs/common';
-import { MongooseModule } from '@nestjs/mongoose';
-import { AppController } from './controllers/app.controller';
-import { AppService } from './app.service';
 import { JwtModule } from '@nestjs/jwt';
-import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { MongooseModule } from '@nestjs/mongoose';
 
-import { User, UserSchema } from './models/user.schema';
+import { AuthController } from './controllers/auth.controller';
+import { MajorController } from './controllers/major.controller';
 import { Course, CourseSchema } from './models/course.schema';
 import { Major, MajorSchema } from './models/major.schema';
 import { MajorCourse, MajorCourseSchema } from './models/major_course.schema';
-import { UserService } from './services/user.service';
+import { User, UserSchema } from './models/user.schema';
 import { AuthService } from './services/auth.service';
-import { AuthController } from './controllers/auth.controller';
-import { MajorService } from './services/major.service';
+import { ConfigService } from './shared/config.service';
 import { CourseService } from './services/course.service';
-import { MajorController } from './controllers/major.controller';
+import { MajorService } from './services/major.service';
+import { UserService } from './services/user.service';
+import { GlobalModule } from './shared/global.module';
 
 @Module({
   imports: [
-    MongooseModule.forRoot('mongodb://localhost:27017/study_together'), // Change DB name as needed
+    GlobalModule,
+    MongooseModule.forRootAsync({
+      useFactory: (cfg: ConfigService) => {
+        return {
+          uri: cfg.env.mongoUri,
+        };
+      },
+      inject: [ConfigService],
+    }),
     MongooseModule.forFeature([
       { name: User.name, schema: UserSchema },
       { name: Course.name, schema: CourseSchema },
       { name: Major.name, schema: MajorSchema },
       { name: MajorCourse.name, schema: MajorCourseSchema },
     ]),
-    JwtModule.register({
-      secret: 'your_jwt_secret', // đổi thành biến môi trường khi deploy
-      signOptions: { expiresIn: '1d' },
+    JwtModule.registerAsync({
+      useFactory: (cfg: ConfigService) => {
+        return {
+          secret: cfg.env.jwtSecret,
+          signOptions: { expiresIn: cfg.env.jwtExpiresIn },
+        };
+      },
+      inject: [ConfigService],
     }),
-    // ...other modules...
   ],
   controllers: [
-    AppController,
     AuthController,
     MajorController, // Thêm dòng này
   ],
   providers: [
-    AppService,
     UserService,
     MajorService,
     CourseService,
