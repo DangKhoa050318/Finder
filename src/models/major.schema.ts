@@ -3,7 +3,10 @@ import { Document } from 'mongoose';
 
 export type MajorDocument = Major & Document;
 
-@Schema()
+@Schema({
+  timestamps: true,
+  versionKey: false,
+})
 export class Major {
   @Prop({ required: true, unique: true })
   major_id: string;

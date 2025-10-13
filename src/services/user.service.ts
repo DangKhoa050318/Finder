@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import * as bcrypt from 'bcryptjs';
 import { Model } from 'mongoose';
-import { User, UserDocument } from '../models/user.schema';
+import { Role, User, UserDocument } from '../models/user.schema';
 
 @Injectable()
 export class UserService {
@@ -13,13 +13,11 @@ export class UserService {
       email: 'admin123@gmail.com',
     });
     if (!existed) {
-      const hash = await bcrypt.hash('123', 10); // Mã hóa mật khẩu
       const admin = new this.userModel({
-        user_id: 'admin',
         full_name: 'admin',
         email: 'admin123@gmail.com',
-        password: hash, // Lưu mật khẩu đã mã hóa
-        role: 'Admin',
+        password: '123',
+        role: Role.Admin,
       });
       return admin.save();
     }

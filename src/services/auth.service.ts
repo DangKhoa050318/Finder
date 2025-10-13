@@ -1,12 +1,14 @@
 import {
+  BadRequestException,
   Injectable,
   UnauthorizedException,
-  BadRequestException,
 } from '@nestjs/common';
-import { UserService } from './user.service';
-import * as bcrypt from 'bcryptjs';
 import { JwtService } from '@nestjs/jwt';
-import { Types } from 'mongoose';
+import * as bcrypt from 'bcryptjs';
+import { toDto } from 'src/utils/toDto';
+import { RegisterDto } from '../dtos/auth.dto';
+import { UserResponseDto } from '../dtos/user.dto';
+import { UserService } from './user.service';
 
 @Injectable()
 export class AuthService {
@@ -28,26 +30,20 @@ export class AuthService {
     const payload = { sub: user._id, email: user.email, role: user.role };
     return {
       access_token: this.jwtService.sign(payload),
-      user,
+      user: this.toUserDto(user),
     };
   }
 
-  async register(data: {
-    email: string;
-    full_name: string;
-    password: string;
-    major_id: string;
-  }) {
+  async register(data: RegisterDto) {
     const existed = await this.userService.findByEmail(data.email);
     if (existed) throw new BadRequestException('Email đã tồn tại');
-    const hash = await bcrypt.hash(data.password, 10);
-    return this.userService.create({
-      user_id: data.email,
-      email: data.email,
-      full_name: data.full_name,
-      password: hash,
-      major_id: new Types.ObjectId(data.major_id), // chuyển sang ObjectId
-      role: 'User',
-    });
+    await this.userService.create(data);
+    return {
+      message: 'Đăng ký thành công',
+    };
+  }
+
+  private toUserDto(user: any): UserResponseDto {
+    return toDto(user, UserResponseDto);
   }
 }

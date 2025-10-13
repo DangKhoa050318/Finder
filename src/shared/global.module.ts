@@ -1,20 +1,28 @@
 import { Global, Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { JwtModule, JwtService } from '@nestjs/jwt';
+import { JwtModule } from '@nestjs/jwt';
 import { ConfigService } from './config.service';
 
 const imports = [
   ConfigModule.forRoot({
     isGlobal: true,
   }),
-  JwtModule.register({}),
+  JwtModule.registerAsync({
+    useFactory: (cfg: ConfigService) => {
+      return {
+        global: true,
+        secret: cfg.env.jwtSecret,
+        signOptions: { expiresIn: cfg.env.jwtExpiresIn },
+      };
+    },
+    inject: [ConfigService],
+  }),
 ];
-const providers = [ConfigService, JwtService];
 
 @Global()
 @Module({
   imports,
-  providers,
-  exports: [...providers],
+  providers: [ConfigService],
+  exports: [ConfigService, JwtModule],
 })
 export class GlobalModule {}

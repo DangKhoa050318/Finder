@@ -7,7 +7,7 @@ import { MajorController } from './controllers/major.controller';
 import { Course, CourseSchema } from './models/course.schema';
 import { Major, MajorSchema } from './models/major.schema';
 import { MajorCourse, MajorCourseSchema } from './models/major_course.schema';
-import { User, UserSchema } from './models/user.schema';
+import { User, UserSchema, UserSchemaModule } from './models/user.schema';
 import { AuthService } from './services/auth.service';
 import { ConfigService } from './shared/config.service';
 import { CourseService } from './services/course.service';
@@ -26,21 +26,13 @@ import { GlobalModule } from './shared/global.module';
       },
       inject: [ConfigService],
     }),
+
+    UserSchemaModule,
     MongooseModule.forFeature([
-      { name: User.name, schema: UserSchema },
       { name: Course.name, schema: CourseSchema },
       { name: Major.name, schema: MajorSchema },
       { name: MajorCourse.name, schema: MajorCourseSchema },
     ]),
-    JwtModule.registerAsync({
-      useFactory: (cfg: ConfigService) => {
-        return {
-          secret: cfg.env.jwtSecret,
-          signOptions: { expiresIn: cfg.env.jwtExpiresIn },
-        };
-      },
-      inject: [ConfigService],
-    }),
   ],
   controllers: [
     AuthController,

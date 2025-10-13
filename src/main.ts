@@ -6,6 +6,7 @@ import { CourseService } from './services/course.service';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { GlobalModule } from './shared/global.module';
 import { ConfigService } from './shared/config.service';
+import { ValidationPipe } from '@nestjs/common';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -32,7 +33,15 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup(cfg.env.swaggerPath, app, document);
 
-  await app.listen(cfg.env.port, () => {
+  app.useGlobalPipes(
+    new ValidationPipe({
+      transform: true,
+      whitelist: true,
+      enableDebugMessages: true,
+    }),
+  );
+
+  app.listen(cfg.env.port, () => {
     console.log(
       `🚀[SERVER] Documentation http://localhost:${cfg.env.port}${cfg.env.swaggerPath}`,
     );
