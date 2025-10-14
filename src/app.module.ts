@@ -1,12 +1,14 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 
-import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
+import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { AuthController } from './controllers/auth.controller';
 import { MajorController } from './controllers/major.controller';
 import { AllExceptionFilter } from './exceptions/all.exception';
 import { HttpExceptionFilter } from './exceptions/http.exception';
 import { MongoExceptionFilter } from './exceptions/mongo.exception';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { RolesGuard } from './guards/roles.guard';
 import { TransformInterceptor } from './interceptors/transform.interceptor';
 import { Course, CourseSchema } from './models/course.schema';
 import { Major, MajorSchema } from './models/major.schema';
@@ -43,6 +45,14 @@ import { GlobalModule } from './shared/global.module';
     MajorController, // Thêm dòng này
   ],
   providers: [
+    {
+      provide: APP_GUARD,
+      useClass: JwtAuthGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: RolesGuard,
+    },
     {
       provide: APP_FILTER,
       useClass: AllExceptionFilter,

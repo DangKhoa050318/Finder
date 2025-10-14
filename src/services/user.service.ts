@@ -32,4 +32,8 @@ export class UserService {
   async findByEmail(email: string) {
     return this.userModel.findOne({ email });
   }
+
+  async findById(id: string) {
+    return this.userModel.findById(id);
+  }
 }

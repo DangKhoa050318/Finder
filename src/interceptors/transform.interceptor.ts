@@ -3,15 +3,11 @@ import {
   ExecutionContext,
   Injectable,
   NestInterceptor,
-  SetMetadata,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
-
-const MESSAGE_KEY = 'MESSAGE_KEY';
-export const ResponseMessage = (message: string) =>
-  SetMetadata(MESSAGE_KEY, message);
+import { MESSAGE_KEY } from 'src/decorators/message.decorator';
 
 export interface Response<T> {
   data: T;

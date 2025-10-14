@@ -9,6 +9,7 @@ import { toDto } from 'src/utils/toDto';
 import { RegisterDto } from '../dtos/auth.dto';
 import { UserResponseDto } from '../dtos/user.dto';
 import { UserService } from './user.service';
+import { JwtPayload } from 'src/types/jwt';
 
 @Injectable()
 export class AuthService {
@@ -27,7 +28,11 @@ export class AuthService {
 
   async login(email: string, password: string) {
     const user = await this.validateUser(email, password);
-    const payload = { sub: user._id, email: user.email, role: user.role };
+    const payload: JwtPayload = {
+      _id: user.id,
+      email: user.email,
+      role: user.role,
+    };
     return {
       access_token: this.jwtService.sign(payload),
       user: this.toUserDto(user),
@@ -41,6 +46,12 @@ export class AuthService {
     return {
       message: 'Đăng ký thành công',
     };
+  }
+
+  async getMe(email: string) {
+    const user = await this.userService.findByEmail(email);
+    if (!user) throw new UnauthorizedException('Người dùng không tồn tại');
+    return this.toUserDto(user);
   }
 
   private toUserDto(user: any): UserResponseDto {
