@@ -1,18 +1,22 @@
 import { Module } from '@nestjs/common';
-import { JwtModule } from '@nestjs/jwt';
 import { MongooseModule } from '@nestjs/mongoose';
 
+import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
 import { AuthController } from './controllers/auth.controller';
 import { MajorController } from './controllers/major.controller';
+import { AllExceptionFilter } from './exceptions/all.exception';
+import { HttpExceptionFilter } from './exceptions/http.exception';
+import { MongoExceptionFilter } from './exceptions/mongo.exception';
+import { TransformInterceptor } from './interceptors/transform.interceptor';
 import { Course, CourseSchema } from './models/course.schema';
 import { Major, MajorSchema } from './models/major.schema';
 import { MajorCourse, MajorCourseSchema } from './models/major_course.schema';
-import { User, UserSchema, UserSchemaModule } from './models/user.schema';
+import { UserSchemaModule } from './models/user.schema';
 import { AuthService } from './services/auth.service';
-import { ConfigService } from './shared/config.service';
 import { CourseService } from './services/course.service';
 import { MajorService } from './services/major.service';
 import { UserService } from './services/user.service';
+import { ConfigService } from './shared/config.service';
 import { GlobalModule } from './shared/global.module';
 
 @Module({
@@ -39,6 +43,22 @@ import { GlobalModule } from './shared/global.module';
     MajorController, // Thêm dòng này
   ],
   providers: [
+    {
+      provide: APP_FILTER,
+      useClass: AllExceptionFilter,
+    },
+    {
+      provide: APP_FILTER,
+      useClass: MongoExceptionFilter,
+    },
+    {
+      provide: APP_FILTER,
+      useClass: HttpExceptionFilter,
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: TransformInterceptor,
+    },
     UserService,
     MajorService,
     CourseService,
