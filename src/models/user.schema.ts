@@ -3,6 +3,7 @@ import { Document, Types } from 'mongoose';
 import { ConfigService } from 'src/shared/config.service';
 import * as bcrypt from 'bcrypt';
 import { Expose } from 'class-transformer';
+import { ApiProperty } from '@nestjs/swagger';
 export type UserDocument = User & Document;
 
 export enum Role {
@@ -10,25 +11,63 @@ export enum Role {
   User = 'User',
 }
 
+@Schema({ _id: false, versionKey: false })
+export class UserStatus {
+  @ApiProperty({ default: true })
+  @Prop({ default: true })
+  isNewUser: boolean;
+
+  @ApiProperty({ default: false })
+  @Prop({ default: false })
+  isBlocked: boolean;
+}
+
 @Schema({
   timestamps: true,
   versionKey: false,
 })
 export class User {
+  @ApiProperty({
+    example: 'Nguyễn Văn A',
+    description: 'Họ và tên của người dùng',
+  })
   @Prop({ required: true })
   full_name: string;
 
+  @ApiProperty({
+    example: 'admin123@gmail.com',
+    description: 'Email của người dùng',
+  })
   @Prop({ required: true, unique: true })
   email: string;
 
+  @ApiProperty({
+    example: 'password123',
+    description: 'Mật khẩu của người dùng',
+  })
   @Prop({ required: true })
   password: string;
 
+  @ApiProperty({ default: null, type: 'string', format: 'ObjectId' })
   @Prop({ type: Types.ObjectId, ref: 'Major', default: null })
   major_id: Types.ObjectId;
 
+  @ApiProperty({ default: Role.User, enum: Role })
   @Prop({ required: true, enum: Role, default: Role.User })
   role: Role;
+
+  @ApiProperty({
+    default: () => ({ isNewUser: true, isBlocked: false }),
+    type: UserStatus,
+  })
+  @Prop({
+    type: UserStatus,
+    default: () => ({
+      isNewUser: true,
+      isBlocked: false,
+    }),
+  })
+  status: UserStatus;
 }
 export const UserSchemaModule = MongooseModule.forFeatureAsync([
   {

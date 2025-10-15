@@ -21,6 +21,11 @@ export class AuthService {
   async validateUser(email: string, password: string) {
     const user = await this.userService.findByEmail(email);
     if (!user) throw new UnauthorizedException('Email không tồn tại');
+
+    if (user.status.isBlocked) {
+      throw new UnauthorizedException('Tài khoản đã bị khóa');
+    }
+
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) throw new UnauthorizedException('Mật khẩu không đúng');
     return user;
