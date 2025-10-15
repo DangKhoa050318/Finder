@@ -1,9 +1,8 @@
 import { MongooseModule, Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { ApiProperty } from '@nestjs/swagger';
+import * as bcrypt from 'bcrypt';
 import { Document, Types } from 'mongoose';
 import { ConfigService } from 'src/shared/config.service';
-import * as bcrypt from 'bcrypt';
-import { Expose } from 'class-transformer';
-import { ApiProperty } from '@nestjs/swagger';
 export type UserDocument = User & Document;
 
 export enum Role {
