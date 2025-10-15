@@ -4,6 +4,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { AuthController } from './controllers/auth.controller';
 import { MajorController } from './controllers/major.controller';
+import { UserController } from './controllers/user.controller';
 import { AllExceptionFilter } from './exceptions/all.exception';
 import { HttpExceptionFilter } from './exceptions/http.exception';
 import { MongoExceptionFilter } from './exceptions/mongo.exception';
@@ -42,6 +43,7 @@ import { GlobalModule } from './shared/global.module';
   ],
   controllers: [
     AuthController,
+    UserController,
     MajorController, // Thêm dòng này
   ],
   providers: [

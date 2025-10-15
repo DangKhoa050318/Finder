@@ -26,7 +26,7 @@ export class AuthService {
       throw new UnauthorizedException('Tài khoản đã bị khóa');
     }
 
-    const isMatch = await bcrypt.compare(password, user.password);
+    const isMatch = await user.comparePassword(password);
     if (!isMatch) throw new UnauthorizedException('Mật khẩu không đúng');
     return user;
   }

@@ -36,4 +36,30 @@ export class UserService {
   async findById(id: string) {
     return this.userModel.findById(id);
   }
+
+  async updateUserStatus(
+    userId: string,
+    status: { isNewUser?: boolean; isBlocked?: boolean },
+  ) {
+    return this.userModel.findByIdAndUpdate(
+      userId,
+      { $set: { status } },
+      { new: true },
+    );
+  }
+
+  async updateUser(userId: string, data: Partial<User>) {
+    const user = await this.userModel.findById(userId);
+    if (!user) return null;
+    user.set(data);
+    return user.save();
+  }
+
+  async changePassword(userId: string, newPassword: string) {
+    const user = await this.findById(userId);
+    if (!user) throw new Error('User not found');
+
+    user.password = newPassword;
+    return user.save();
+  }
 }
