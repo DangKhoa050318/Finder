@@ -9,10 +9,10 @@ export type MajorDocument = Major & Document;
 })
 export class Major {
   @Prop({ required: true, unique: true })
-  major_id: string;
+  key: string;
 
   @Prop({ required: true })
-  major_name: string;
+  name: string;
 }
 
 export const MajorSchema = SchemaFactory.createForClass(Major);
