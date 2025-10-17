@@ -3,7 +3,10 @@ import { Document, Types } from 'mongoose';
 
 export type MajorCourseDocument = MajorCourse & Document;
 
-@Schema()
+@Schema({
+  timestamps: true,
+  versionKey: false,
+})
 export class MajorCourse {
   @Prop({ type: Types.ObjectId, ref: 'Major', required: true })
   major_id: Types.ObjectId;

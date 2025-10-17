@@ -4,6 +4,9 @@ import { UserService } from './services/user.service';
 import { MajorService } from './services/major.service';
 import { CourseService } from './services/course.service';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { GlobalModule } from './shared/global.module';
+import { ConfigService } from './shared/config.service';
+import { ValidationPipe } from '@nestjs/common';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -24,10 +27,31 @@ async function bootstrap() {
     .setDescription('API documentation')
     .setVersion('1.0')
     .build();
-  const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api', app, document);
 
-  const port = process.env.PORT ? Number(process.env.PORT) : 3000;
-  await app.listen(port);
+  const cfg = app.select(GlobalModule).get(ConfigService);
+  app.setGlobalPrefix(cfg.env.prefix);
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup(cfg.env.swaggerPath, app, document);
+
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      enableDebugMessages: true,
+      transformOptions: {
+        enableImplicitConversion: true,
+        exposeDefaultValues: true,
+        exposeUnsetFields: false,
+      },
+    }),
+  );
+
+  app.listen(cfg.env.port, () => {
+    console.log(
+      `🚀[SERVER] Documentation http://localhost:${cfg.env.port}${cfg.env.swaggerPath}`,
+    );
+    console.log(
+      `🚀[SERVER] Running on http://localhost:${cfg.env.port}${cfg.env.prefix}`,
+    );
+  });
 }
 bootstrap();

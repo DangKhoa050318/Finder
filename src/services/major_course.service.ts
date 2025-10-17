@@ -155,7 +155,7 @@ export class MajorCourseService {
     for (const major of majorCourses) {
       // Tìm major theo major_id
       const majorDoc = await this.majorModel.findOne({
-        major_id: major.major_id,
+        key: major.major_id,
       });
       if (!majorDoc) continue;
 

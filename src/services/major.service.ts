@@ -11,14 +11,14 @@ export class MajorService {
 
   async createDefaultMajors() {
     const majors = [
-      { major_id: 'se', major_name: 'Software Engineering' },
-      { major_id: 'ai', major_name: 'Artificial Intelligence' },
-      { major_id: 'ib', major_name: 'International Business' },
+      { key: 'se', name: 'Software Engineering' },
+      { key: 'ai', name: 'Artificial Intelligence' },
+      { key: 'ib', name: 'International Business' },
     ];
 
     for (const major of majors) {
       const existed = await this.majorModel.findOne({
-        major_id: major.major_id,
+        key: major.key,
       });
       if (!existed) {
         await new this.majorModel(major).save();

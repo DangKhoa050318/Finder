@@ -1,9 +1,8 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import * as bcrypt from 'bcryptjs';
-import { Model, Types, isValidObjectId } from 'mongoose';
-import { User, UserDocument } from '../models/user.schema';
-import { UpdateUserDto } from '../dto/update-user.dto';
+import { Model } from 'mongoose';
+import { Role, User, UserDocument } from '../models/user.schema';
 
 @Injectable()
 export class UserService {
@@ -14,13 +13,11 @@ export class UserService {
       email: 'admin123@gmail.com',
     });
     if (!existed) {
-      const hash = await bcrypt.hash('123', 10); 
       const admin = new this.userModel({
-        user_id: 'admin',
         full_name: 'admin',
         email: 'admin123@gmail.com',
-        password: hash, 
-        role: 'Admin',
+        password: '123',
+        role: Role.Admin,
       });
       return admin.save();
     }
@@ -37,22 +34,32 @@ export class UserService {
   }
 
   async findById(id: string) {
-    return this.userModel.findById(id).exec();
+    return this.userModel.findById(id);
   }
 
-  async updateById(id: string, patch: UpdateUserDto) {
-    const update: any = { ...patch };
-    if (patch.major_id !== undefined) {
-      if (patch.major_id === null || patch.major_id === '') {
-        update.major_id = undefined; // ignore clearing via empty string
-      } else {
-        if (!isValidObjectId(patch.major_id)) {
-          throw new BadRequestException('Invalid major_id');
-        }
-        update.major_id = new Types.ObjectId(patch.major_id);
-      }
-    }
+  async updateUserStatus(
+    userId: string,
+    status: { isNewUser?: boolean; isBlocked?: boolean },
+  ) {
+    return this.userModel.findByIdAndUpdate(
+      userId,
+      { $set: { status } },
+      { new: true },
+    );
+  }
 
-    return this.userModel.findByIdAndUpdate(id, update, { new: true }).exec();
+  async updateUser(userId: string, data: Partial<User>) {
+    const user = await this.userModel.findById(userId);
+    if (!user) return null;
+    user.set(data);
+    return user.save();
+  }
+
+  async changePassword(userId: string, newPassword: string) {
+    const user = await this.findById(userId);
+    if (!user) throw new Error('User not found');
+
+    user.password = newPassword;
+    return user.save();
   }
 }
