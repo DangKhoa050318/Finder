@@ -12,7 +12,7 @@ const imports = [
       return {
         global: true,
         secret: cfg.env.jwtSecret,
-        signOptions: { expiresIn: cfg.env.jwtExpiresIn },
+        signOptions: { expiresIn: cfg.env.jwtExpiresIn as any },
       };
     },
     inject: [ConfigService],

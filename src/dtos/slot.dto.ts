@@ -1,0 +1,89 @@
+import { IsNotEmpty, IsString, IsOptional, IsDateString, IsMongoId, IsEnum, MinLength } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { SlotType } from '../models/slot.schema';
+
+export class CreateGroupSlotDto {
+  @ApiProperty({ description: 'ID của nhóm' })
+  @IsNotEmpty({ message: 'Group ID không được để trống' })
+  @IsMongoId({ message: 'Group ID không hợp lệ' })
+  group_id: string;
+
+  @ApiProperty({ description: 'Tiêu đề slot' })
+  @IsNotEmpty({ message: 'Tiêu đề không được để trống' })
+  @IsString({ message: 'Tiêu đề phải là chuỗi' })
+  @MinLength(3, { message: 'Tiêu đề phải có ít nhất 3 ký tự' })
+  title: string;
+
+  @ApiPropertyOptional({ description: 'Mô tả slot' })
+  @IsOptional()
+  @IsString({ message: 'Mô tả phải là chuỗi' })
+  description?: string;
+
+  @ApiProperty({ description: 'Thời gian bắt đầu' })
+  @IsNotEmpty({ message: 'Start time không được để trống' })
+  @IsDateString({}, { message: 'Start time phải là định dạng datetime hợp lệ' })
+  start_time: string;
+
+  @ApiProperty({ description: 'Thời gian kết thúc' })
+  @IsNotEmpty({ message: 'End time không được để trống' })
+  @IsDateString({}, { message: 'End time phải là định dạng datetime hợp lệ' })
+  end_time: string;
+}
+
+export class CreatePrivateSlotDto {
+  @ApiProperty({ description: 'ID của bạn bè' })
+  @IsNotEmpty({ message: 'Friend ID không được để trống' })
+  @IsMongoId({ message: 'Friend ID không hợp lệ' })
+  friend_id: string;
+
+  @ApiProperty({ description: 'Tiêu đề slot' })
+  @IsNotEmpty({ message: 'Tiêu đề không được để trống' })
+  @IsString({ message: 'Tiêu đề phải là chuỗi' })
+  @MinLength(3, { message: 'Tiêu đề phải có ít nhất 3 ký tự' })
+  title: string;
+
+  @ApiPropertyOptional({ description: 'Mô tả slot' })
+  @IsOptional()
+  @IsString({ message: 'Mô tả phải là chuỗi' })
+  description?: string;
+
+  @ApiProperty({ description: 'Thời gian bắt đầu' })
+  @IsNotEmpty({ message: 'Start time không được để trống' })
+  @IsDateString({}, { message: 'Start time phải là định dạng datetime hợp lệ' })
+  start_time: string;
+
+  @ApiProperty({ description: 'Thời gian kết thúc' })
+  @IsNotEmpty({ message: 'End time không được để trống' })
+  @IsDateString({}, { message: 'End time phải là định dạng datetime hợp lệ' })
+  end_time: string;
+}
+
+export class UpdateSlotDto {
+  @ApiPropertyOptional({ description: 'Tiêu đề slot' })
+  @IsOptional()
+  @IsString({ message: 'Tiêu đề phải là chuỗi' })
+  @MinLength(3, { message: 'Tiêu đề phải có ít nhất 3 ký tự' })
+  title?: string;
+
+  @ApiPropertyOptional({ description: 'Mô tả slot' })
+  @IsOptional()
+  @IsString({ message: 'Mô tả phải là chuỗi' })
+  description?: string;
+
+  @ApiPropertyOptional({ description: 'Thời gian bắt đầu' })
+  @IsOptional()
+  @IsDateString({}, { message: 'Start time phải là định dạng datetime hợp lệ' })
+  start_time?: string;
+
+  @ApiPropertyOptional({ description: 'Thời gian kết thúc' })
+  @IsOptional()
+  @IsDateString({}, { message: 'End time phải là định dạng datetime hợp lệ' })
+  end_time?: string;
+}
+
+export class GetSlotsDto {
+  @ApiPropertyOptional({ enum: SlotType, description: 'Lọc theo loại slot' })
+  @IsOptional()
+  @IsEnum(SlotType, { message: 'Slot type không hợp lệ' })
+  slot_type?: SlotType;
+}

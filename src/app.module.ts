@@ -24,6 +24,24 @@ import { GlobalModule } from './shared/global.module';
 import { Availability, AvailabilitySchema } from './models/availability.schema';
 import { AvailabilityService } from './services/availability.service';
 import { AvailabilityController } from './controllers/availability.controller';
+// New schemas
+import { FriendRequest, FriendRequestSchema } from './models/friend-request.schema';
+import { Friendship, FriendshipSchema } from './models/friendship.schema';
+import { Report, ReportSchema } from './models/report.schema';
+import { Block, BlockSchema } from './models/block.schema';
+import { News, NewsSchema } from './models/news.schema';
+import { Ban, BanSchema } from './models/ban.schema';
+import { Group, GroupSchema } from './models/group.schema';
+import { GroupMember, GroupMemberSchema } from './models/group-member.schema';
+import { Chat, ChatSchema } from './models/chat.schema';
+import { ChatParticipant, ChatParticipantSchema } from './models/chat-participant.schema';
+import { Message, MessageSchema } from './models/message.schema';
+import { Slot, SlotSchema } from './models/slot.schema';
+import { SlotGroup, SlotGroupSchema } from './models/slot-group.schema';
+import { SlotPrivate, SlotPrivateSchema } from './models/slot-private.schema';
+import { Attendance, AttendanceSchema } from './models/attendance.schema';
+import { Task, TaskSchema } from './models/task.schema';
+import { Reminder, ReminderSchema } from './models/reminder.schema';
 
 @Module({
   imports: [
@@ -39,10 +57,29 @@ import { AvailabilityController } from './controllers/availability.controller';
 
     UserSchemaModule,
     MongooseModule.forFeature([
+      // Existing schemas
       { name: Course.name, schema: CourseSchema },
       { name: Major.name, schema: MajorSchema },
       { name: MajorCourse.name, schema: MajorCourseSchema },
       { name: Availability.name, schema: AvailabilitySchema },
+      // New schemas
+      { name: FriendRequest.name, schema: FriendRequestSchema },
+      { name: Friendship.name, schema: FriendshipSchema },
+      { name: Report.name, schema: ReportSchema },
+      { name: Block.name, schema: BlockSchema },
+      { name: News.name, schema: NewsSchema },
+      { name: Ban.name, schema: BanSchema },
+      { name: Group.name, schema: GroupSchema },
+      { name: GroupMember.name, schema: GroupMemberSchema },
+      { name: Chat.name, schema: ChatSchema },
+      { name: ChatParticipant.name, schema: ChatParticipantSchema },
+      { name: Message.name, schema: MessageSchema },
+      { name: Slot.name, schema: SlotSchema },
+      { name: SlotGroup.name, schema: SlotGroupSchema },
+      { name: SlotPrivate.name, schema: SlotPrivateSchema },
+      { name: Attendance.name, schema: AttendanceSchema },
+      { name: Task.name, schema: TaskSchema },
+      { name: Reminder.name, schema: ReminderSchema },
     ]),
   ],
   controllers: [
