@@ -15,26 +15,33 @@ import { AuthController } from './controllers/auth.controller';
 import { MajorService } from './services/major.service';
 import { CourseService } from './services/course.service';
 import { MajorController } from './controllers/major.controller';
+import { Availability, AvailabilitySchema } from './models/availability.schema';
+import { AvailabilityService } from './services/availability.service';
+import { AvailabilityController } from './controllers/availability.controller';
+import { UserController } from './controllers/user.controller';
 
 @Module({
   imports: [
-    MongooseModule.forRoot('mongodb://localhost:27017/study_together'), // Change DB name as needed
+    MongooseModule.forRoot('mongodb://localhost:27017/study_together'),
     MongooseModule.forFeature([
       { name: User.name, schema: UserSchema },
       { name: Course.name, schema: CourseSchema },
       { name: Major.name, schema: MajorSchema },
       { name: MajorCourse.name, schema: MajorCourseSchema },
+      { name: Availability.name, schema: AvailabilitySchema },
     ]),
     JwtModule.register({
-      secret: 'your_jwt_secret', // đổi thành biến môi trường khi deploy
+      secret: 'your_jwt_secret',
       signOptions: { expiresIn: '1d' },
     }),
-    // ...other modules...
+    
   ],
   controllers: [
     AppController,
     AuthController,
-    MajorController, // Thêm dòng này
+    MajorController,
+    AvailabilityController,
+    UserController,
   ],
   providers: [
     AppService,
@@ -42,6 +49,7 @@ import { MajorController } from './controllers/major.controller';
     MajorService,
     CourseService,
     AuthService,
+    AvailabilityService,
     // ...other services...
   ],
 })
