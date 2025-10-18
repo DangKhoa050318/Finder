@@ -1,4 +1,12 @@
-import { IsNotEmpty, IsString, IsOptional, IsDateString, IsMongoId, IsEnum, MinLength } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsString,
+  IsOptional,
+  IsDateString,
+  IsMongoId,
+  IsEnum,
+  MinLength,
+} from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { SlotType } from '../models/slot.schema';
 
@@ -86,4 +94,32 @@ export class GetSlotsDto {
   @IsOptional()
   @IsEnum(SlotType, { message: 'Slot type không hợp lệ' })
   slot_type?: SlotType;
+}
+
+export class SlotResponseDto {
+  @ApiProperty({ description: 'ID slot', example: '507f1f77bcf86cd799439011' })
+  _id: string;
+
+  @ApiProperty({ description: 'Tiêu đề slot' })
+  title: string;
+
+  @ApiProperty({ description: 'Mô tả slot' })
+  description?: string;
+
+  @ApiProperty({ description: 'Thời gian bắt đầu' })
+  start_time: Date;
+
+  @ApiProperty({ description: 'Thời gian kết thúc' })
+  end_time: Date;
+
+  @ApiProperty({ description: 'ID người tạo' })
+  created_by: string;
+
+  @ApiProperty({ description: 'Loại slot', enum: SlotType })
+  slot_type: SlotType;
+}
+
+export class SlotListResponseDto {
+  @ApiProperty({ description: 'Danh sách slot', type: [SlotResponseDto] })
+  data: SlotResponseDto[];
 }

@@ -6,6 +6,7 @@ import {
   Length,
   MinLength,
 } from 'class-validator';
+import { UserResponseDto } from './user.dto';
 
 export class LoginDto {
   @ApiProperty({
@@ -48,4 +49,17 @@ export class RegisterDto {
   })
   @MinLength(8, { message: 'Mật khẩu phải có ít nhất 8 ký tự' })
   password: string;
+}
+
+export class AuthLoginResponseDto {
+  @ApiProperty({ description: 'JWT access token' })
+  access_token: string;
+
+  @ApiProperty({ description: 'Thông tin người dùng', type: UserResponseDto })
+  user: UserResponseDto;
+}
+
+export class RegisterResponseDto {
+  @ApiProperty({ description: 'Thông báo', example: 'Đăng ký thành công' })
+  message: string;
 }

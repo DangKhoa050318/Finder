@@ -25,6 +25,8 @@ import {
   CreatePrivateSlotDto,
   UpdateSlotDto,
   GetSlotsDto,
+  SlotResponseDto,
+  SlotListResponseDto,
 } from '../dtos/slot.dto';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import { SlotType } from '../models/slot.schema';
@@ -40,6 +42,7 @@ export class SlotController {
   @ApiResponse({
     status: 201,
     description: 'Group slot đã được tạo thành công',
+    type: SlotResponseDto,
   })
   @ApiResponse({
     status: 400,
@@ -92,7 +95,11 @@ export class SlotController {
   @Put(':slotId')
   @ApiOperation({ summary: 'Cập nhật slot (Chỉ dành cho người tạo)' })
   @ApiParam({ name: 'slotId', description: 'ID slot' })
-  @ApiResponse({ status: 200, description: 'Slot đã được cập nhật thành công' })
+  @ApiResponse({
+    status: 200,
+    description: 'Slot đã được cập nhật thành công',
+    type: SlotResponseDto,
+  })
   @ApiResponse({
     status: 403,
     description: 'Chỉ người tạo mới có thể cập nhật',
@@ -129,7 +136,11 @@ export class SlotController {
       'Lấy danh sách slot của người dùng hiện tại (đã tạo hoặc tham gia)',
   })
   @ApiQuery({ name: 'slot_type', required: false, enum: SlotType })
-  @ApiResponse({ status: 200, description: 'Danh sách các slot' })
+  @ApiResponse({
+    status: 200,
+    description: 'Danh sách các slot',
+    type: SlotListResponseDto,
+  })
   async getUserSlots(
     @User() { _id }: JwtPayload,
     @Query('slot_type') slotType?: SlotType,
@@ -139,7 +150,11 @@ export class SlotController {
 
   @Get('upcoming')
   @ApiOperation({ summary: 'Lấy slot sắp tới (7 ngày tới)' })
-  @ApiResponse({ status: 200, description: 'Danh sách các slot sắp tới' })
+  @ApiResponse({
+    status: 200,
+    description: 'Danh sách các slot sắp tới',
+    type: SlotListResponseDto,
+  })
   async getUpcomingSlots(@User() { _id }: JwtPayload) {
     return this.slotService.getUpcomingSlots(_id);
   }
@@ -147,7 +162,11 @@ export class SlotController {
   @Get('group/:groupId')
   @ApiOperation({ summary: 'Lấy slot theo group' })
   @ApiParam({ name: 'groupId', description: 'ID group' })
-  @ApiResponse({ status: 200, description: 'Danh sách các slot của group' })
+  @ApiResponse({
+    status: 200,
+    description: 'Danh sách các slot của group',
+    type: SlotListResponseDto,
+  })
   async getGroupSlots(@Param('groupId') groupId: string) {
     return this.slotService.getGroupSlots(groupId);
   }
@@ -155,7 +174,11 @@ export class SlotController {
   @Get(':slotId')
   @ApiOperation({ summary: 'Lấy slot theo ID' })
   @ApiParam({ name: 'slotId', description: 'ID slot' })
-  @ApiResponse({ status: 200, description: 'Chi tiết slot' })
+  @ApiResponse({
+    status: 200,
+    description: 'Chi tiết slot',
+    type: SlotResponseDto,
+  })
   @ApiResponse({ status: 404, description: 'Không tìm thấy slot' })
   async getSlotById(@Param('slotId') slotId: string) {
     return this.slotService.getSlotById(slotId);
