@@ -24,6 +24,17 @@ import { GlobalModule } from './shared/global.module';
 import { Availability, AvailabilitySchema } from './models/availability.schema';
 import { AvailabilityService } from './services/availability.service';
 import { AvailabilityController } from './controllers/availability.controller';
+// New controllers
+import { FriendController } from './controllers/friend.controller';
+import { ReportController } from './controllers/report.controller';
+import { BlockController } from './controllers/block.controller';
+import { NewsController } from './controllers/news.controller';
+import { BanController } from './controllers/ban.controller';
+import { GroupController } from './controllers/group.controller';
+import { SlotController } from './controllers/slot.controller';
+import { AttendanceController } from './controllers/attendance.controller';
+import { TaskController } from './controllers/task.controller';
+import { ReminderController } from './controllers/reminder.controller';
 // New schemas
 import { FriendRequest, FriendRequestSchema } from './models/friend-request.schema';
 import { Friendship, FriendshipSchema } from './models/friendship.schema';
@@ -42,6 +53,17 @@ import { SlotPrivate, SlotPrivateSchema } from './models/slot-private.schema';
 import { Attendance, AttendanceSchema } from './models/attendance.schema';
 import { Task, TaskSchema } from './models/task.schema';
 import { Reminder, ReminderSchema } from './models/reminder.schema';
+// New services
+import { FriendService } from './services/friend.service';
+import { ReportService } from './services/report.service';
+import { BlockService } from './services/block.service';
+import { NewsService } from './services/news.service';
+import { BanService } from './services/ban.service';
+import { GroupService } from './services/group.service';
+import { SlotService } from './services/slot.service';
+import { AttendanceService } from './services/attendance.service';
+import { TaskService } from './services/task.service';
+import { ReminderService } from './services/reminder.service';
 
 @Module({
   imports: [
@@ -87,6 +109,16 @@ import { Reminder, ReminderSchema } from './models/reminder.schema';
     UserController,
     MajorController,
     AvailabilityController,
+    FriendController,
+    ReportController,
+    BlockController,
+    NewsController,
+    BanController,
+    GroupController,
+    SlotController,
+    AttendanceController,
+    TaskController,
+    ReminderController,
   ],
   providers: [
     {
@@ -118,7 +150,16 @@ import { Reminder, ReminderSchema } from './models/reminder.schema';
     CourseService,
     AuthService,
     AvailabilityService,
-    // ...other services...
+    FriendService,
+    ReportService,
+    BlockService,
+    NewsService,
+    BanService,
+    GroupService,
+    SlotService,
+    AttendanceService,
+    TaskService,
+    ReminderService,
   ],
 })
 export class AppModule {}
