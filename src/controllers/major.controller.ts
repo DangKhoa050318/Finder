@@ -61,7 +61,6 @@ export class MajorController {
 
   @Post()
   @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.Admin)
   @ApiOperation({ summary: 'Tạo ngành mới (Chỉ dành cho admin)' })
   @ApiResponse({
@@ -77,7 +76,6 @@ export class MajorController {
 
   @Put(':id')
   @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.Admin)
   @ApiOperation({ summary: 'Cập nhật ngành (Chỉ dành cho admin)' })
   @ApiParam({ name: 'id', description: 'ID ngành' })
@@ -94,7 +92,6 @@ export class MajorController {
 
   @Delete(':id')
   @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.Admin)
   @ApiOperation({ summary: 'Xóa ngành (Chỉ dành cho admin)' })
   @ApiParam({ name: 'id', description: 'ID ngành' })
@@ -104,7 +101,7 @@ export class MajorController {
     schema: {
       type: 'object',
       properties: {
-        message: { type: 'string', example: 'Major deleted successfully' },
+        message: { type: 'string', example: 'Đã xóa ngành học thành công' },
       },
     },
   })

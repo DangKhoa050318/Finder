@@ -28,13 +28,12 @@ import type { JwtPayload } from '../types/jwt';
 import { Public } from '../decorators/public.decorator';
 
 @ApiTags('Availability')
+@ApiBearerAuth()
 @Controller('availability')
 export class AvailabilityController {
   constructor(private readonly availabilityService: AvailabilityService) {}
 
   @Post()
-  @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Tạo khung giờ rảnh' })
   @ApiResponse({
     status: 201,
@@ -63,8 +62,6 @@ export class AvailabilityController {
   }
 
   @Patch(':id')
-  @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Cập nhật khung giờ rảnh' })
   @ApiParam({ name: 'id', description: 'ID khung giờ rảnh' })
   @ApiResponse({
@@ -82,8 +79,6 @@ export class AvailabilityController {
   }
 
   @Delete(':id')
-  @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Xóa khung giờ rảnh' })
   @ApiParam({ name: 'id', description: 'ID khung giờ rảnh' })
   @ApiResponse({

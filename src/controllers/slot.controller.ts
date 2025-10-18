@@ -31,7 +31,6 @@ import { SlotType } from '../models/slot.schema';
 
 @ApiTags('Slots')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
 @Controller('slots')
 export class SlotController {
   constructor(private readonly slotService: SlotService) {}

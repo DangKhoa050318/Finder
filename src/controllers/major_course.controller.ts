@@ -87,7 +87,6 @@ export class MajorCourseController {
 
   @Post()
   @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.Admin)
   @ApiOperation({
     summary: 'Tạo mối quan hệ ngành-môn học (Chỉ dành cho admin)',
@@ -112,7 +111,6 @@ export class MajorCourseController {
 
   @Delete(':id')
   @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.Admin)
   @ApiOperation({
     summary: 'Xóa mối quan hệ ngành-môn học (Chỉ dành cho admin)',
@@ -126,7 +124,7 @@ export class MajorCourseController {
       properties: {
         message: {
           type: 'string',
-          example: 'Major-Course relationship deleted successfully',
+          example: 'Đã xóa mối quan hệ ngành-môn học thành công',
         },
       },
     },
@@ -139,7 +137,6 @@ export class MajorCourseController {
 
   @Delete('major/:majorId/course/:courseId')
   @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.Admin)
   @ApiOperation({
     summary: 'Xóa mối quan hệ theo ngành và môn học (Chỉ dành cho admin)',
@@ -154,7 +151,7 @@ export class MajorCourseController {
       properties: {
         message: {
           type: 'string',
-          example: 'Major-Course relationship deleted successfully',
+          example: 'Đã xóa mối quan hệ ngành-môn học thành công',
         },
       },
     },

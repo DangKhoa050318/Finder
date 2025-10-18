@@ -29,7 +29,6 @@ import { BanStatus } from '../models/ban.schema';
 
 @ApiTags('Bans')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(Role.Admin)
 @Controller('bans')
 export class BanController {

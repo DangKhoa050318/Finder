@@ -24,7 +24,6 @@ import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 
 @ApiTags('Friends')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
 @Controller('friends')
 export class FriendController {
   constructor(private readonly friendService: FriendService) {}

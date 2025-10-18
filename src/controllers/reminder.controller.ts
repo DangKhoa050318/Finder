@@ -26,7 +26,6 @@ import { ReminderStatus } from '../models/reminder.schema';
 
 @ApiTags('Reminders')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
 @Controller('reminders')
 export class ReminderController {
   constructor(private readonly reminderService: ReminderService) {}

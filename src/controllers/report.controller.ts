@@ -27,7 +27,6 @@ import { Role } from '../models/user.schema';
 
 @ApiTags('Reports')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
 @Controller('reports')
 export class ReportController {
   constructor(private readonly reportService: ReportService) {}

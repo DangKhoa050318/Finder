@@ -31,7 +31,7 @@ export class CreateMajorDto {
 }
 
 export class UpdateMajorDto {
-  @ApiPropertyOptional({
+  @ApiProperty({
     example: 'Software Engineering',
     description: 'Tên ngành',
   })
@@ -39,8 +39,7 @@ export class UpdateMajorDto {
   @IsNotEmpty()
   @MinLength(3)
   @MaxLength(100)
-  @IsOptional()
-  name?: string;
+  name: string;
 }
 
 export class MajorResponseDto {

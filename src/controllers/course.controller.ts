@@ -61,7 +61,6 @@ export class CourseController {
 
   @Post()
   @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.Admin)
   @ApiOperation({ summary: 'Tạo môn học mới (Chỉ dành cho admin)' })
   @ApiResponse({
@@ -77,7 +76,6 @@ export class CourseController {
 
   @Put(':id')
   @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.Admin)
   @ApiOperation({ summary: 'Cập nhật môn học (Chỉ dành cho admin)' })
   @ApiParam({ name: 'id', description: 'ID môn học' })
@@ -89,15 +87,11 @@ export class CourseController {
   @ApiResponse({ status: 404, description: 'Không tìm thấy môn học' })
   @ApiResponse({ status: 403, description: 'Không có quyền truy cập' })
   async updateCourse(@Param('id') id: string, @Body() dto: UpdateCourseDto) {
-    if (!dto.course_name) {
-      throw new Error('Course name is required');
-    }
     return this.courseService.update(id, dto.course_name);
   }
 
   @Delete(':id')
   @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.Admin)
   @ApiOperation({ summary: 'Xóa môn học (Chỉ dành cho admin)' })
   @ApiParam({ name: 'id', description: 'ID môn học' })
@@ -107,7 +101,7 @@ export class CourseController {
     schema: {
       type: 'object',
       properties: {
-        message: { type: 'string', example: 'Course deleted successfully' },
+        message: { type: 'string', example: 'Đã xóa môn học thành công' },
       },
     },
   })

@@ -22,7 +22,6 @@ import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 
 @ApiTags('Block')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
 @Controller('block')
 export class BlockController {
   constructor(private readonly blockService: BlockService) {}

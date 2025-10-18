@@ -25,6 +25,7 @@ import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import { RolesGuard } from '../guards/roles.guard';
 import { Roles } from '../decorators/roles.decorator';
 import { Role } from '../models/user.schema';
+import { Public } from 'src/decorators/public.decorator';
 
 @ApiTags('News')
 @Controller('news')
@@ -33,7 +34,6 @@ export class NewsController {
 
   @Post()
   @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.Admin)
   @ApiOperation({ summary: 'Tạo tin tức (Chỉ dành cho admin)' })
   @ApiResponse({ status: 201, description: 'Tin tức đã được tạo thành công' })
@@ -44,7 +44,6 @@ export class NewsController {
 
   @Put(':newsId')
   @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.Admin)
   @ApiOperation({ summary: 'Cập nhật tin tức (Chỉ dành cho admin)' })
   @ApiParam({ name: 'newsId', description: 'ID tin tức' })
@@ -62,7 +61,6 @@ export class NewsController {
 
   @Delete(':newsId')
   @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.Admin)
   @ApiOperation({ summary: 'Xóa tin tức (Chỉ dành cho admin)' })
   @ApiParam({ name: 'newsId', description: 'ID tin tức' })
@@ -72,6 +70,7 @@ export class NewsController {
     return this.newsService.deleteNews(newsId);
   }
 
+  @Public()
   @Get()
   @ApiOperation({ summary: 'Lấy tất cả tin tức với phân trang' })
   @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
@@ -84,6 +83,7 @@ export class NewsController {
     return this.newsService.getAllNews(page, limit);
   }
 
+  @Public()
   @Get('latest')
   @ApiOperation({ summary: 'Lấy tin tức mới nhất (dành cho trang chủ)' })
   @ApiQuery({ name: 'limit', required: false, type: Number, example: 5 })
@@ -92,6 +92,7 @@ export class NewsController {
     return this.newsService.getLatestNews(limit);
   }
 
+  @Public()
   @Get('search')
   @ApiOperation({ summary: 'Tìm kiếm tin tức theo tiêu đề hoặc nội dung' })
   @ApiQuery({ name: 'q', required: true, type: String })
@@ -106,6 +107,7 @@ export class NewsController {
     return this.newsService.searchNews(query, page, limit);
   }
 
+  @Public()
   @Get(':newsId')
   @ApiOperation({ summary: 'Lấy tin tức theo ID' })
   @ApiParam({ name: 'newsId', description: 'ID tin tức' })

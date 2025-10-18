@@ -26,7 +26,6 @@ import { GroupVisibility } from '../models/group.schema';
 
 @ApiTags('Groups')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
 @Controller('groups')
 export class GroupController {
   constructor(private readonly groupService: GroupService) {}

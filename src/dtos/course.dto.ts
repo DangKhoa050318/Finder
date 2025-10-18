@@ -31,7 +31,7 @@ export class CreateCourseDto {
 }
 
 export class UpdateCourseDto {
-  @ApiPropertyOptional({
+  @ApiProperty({
     example: 'Computer Engineering Algorithms',
     description: 'Tên môn học',
   })
@@ -39,8 +39,7 @@ export class UpdateCourseDto {
   @IsNotEmpty()
   @MinLength(3)
   @MaxLength(200)
-  @IsOptional()
-  course_name?: string;
+  course_name: string;
 }
 
 export class CourseResponseDto {

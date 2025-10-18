@@ -26,7 +26,6 @@ import type { JwtPayload } from '../types/jwt';
 
 @ApiTags('Tasks')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
 @Controller('tasks')
 export class TaskController {
   constructor(private readonly taskService: TaskService) {}

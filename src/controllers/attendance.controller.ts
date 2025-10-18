@@ -23,7 +23,6 @@ import type { JwtPayload } from '../types/jwt';
 
 @ApiTags('Attendance')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
 @Controller('attendance')
 export class AttendanceController {
   constructor(private readonly attendanceService: AttendanceService) {}
