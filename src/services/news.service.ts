@@ -22,12 +22,13 @@ export class NewsService {
   }
 
   // Update news (admin only)
-  async updateNews(newsId: string, updates: { title?: string; content?: string }) {
-    const news = await this.newsModel.findByIdAndUpdate(
-      newsId,
-      { $set: updates },
-      { new: true },
-    ).populate('author_id', 'full_name email');
+  async updateNews(
+    newsId: string,
+    updates: { title?: string; content?: string },
+  ) {
+    const news = await this.newsModel
+      .findByIdAndUpdate(newsId, { $set: updates }, { new: true })
+      .populate('author_id', 'full_name email avatar');
 
     if (!news) {
       throw new NotFoundException('Không tìm thấy tin tức');
@@ -54,7 +55,7 @@ export class NewsService {
     const [news, total] = await Promise.all([
       this.newsModel
         .find()
-        .populate('author_id', 'full_name email')
+        .populate('author_id', 'full_name email avatar')
         .sort({ created_at: -1 })
         .skip(skip)
         .limit(limit),
@@ -73,7 +74,7 @@ export class NewsService {
   async getNewsById(newsId: string) {
     const news = await this.newsModel
       .findById(newsId)
-      .populate('author_id', 'full_name email');
+      .populate('author_id', 'full_name email avatar');
 
     if (!news) {
       throw new NotFoundException('Không tìm thấy tin tức');
@@ -86,7 +87,7 @@ export class NewsService {
   async getLatestNews(limit: number = 5) {
     return this.newsModel
       .find()
-      .populate('author_id', 'full_name')
+      .populate('author_id', 'full_name email avatar')
       .sort({ created_at: -1 })
       .limit(limit);
   }
@@ -100,20 +101,14 @@ export class NewsService {
     const [news, total] = await Promise.all([
       this.newsModel
         .find({
-          $or: [
-            { title: searchRegex },
-            { content: searchRegex },
-          ],
+          $or: [{ title: searchRegex }, { content: searchRegex }],
         })
-        .populate('author_id', 'full_name email')
+        .populate('author_id', 'full_name email avatar')
         .sort({ created_at: -1 })
         .skip(skip)
         .limit(limit),
       this.newsModel.countDocuments({
-        $or: [
-          { title: searchRegex },
-          { content: searchRegex },
-        ],
+        $or: [{ title: searchRegex }, { content: searchRegex }],
       }),
     ]);
 

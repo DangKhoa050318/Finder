@@ -1,4 +1,8 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Block, BlockDocument } from '../models/block.schema';
@@ -42,7 +46,9 @@ export class BlockService {
     });
 
     if (!block) {
-      throw new NotFoundException('Không tìm thấy người dùng trong danh sách chặn');
+      throw new NotFoundException(
+        'Không tìm thấy người dùng trong danh sách chặn',
+      );
     }
 
     return { message: 'Đã bỏ chặn thành công' };
@@ -52,7 +58,7 @@ export class BlockService {
   async getBlockedUsers(blockerId: string) {
     return this.blockModel
       .find({ blocker_id: blockerId })
-      .populate('blocked_id', 'full_name email')
+      .populate('blocked_id', 'full_name email avatar')
       .sort({ created_at: -1 });
   }
 
@@ -82,7 +88,7 @@ export class BlockService {
   async getUsersWhoBlockedMe(userId: string) {
     return this.blockModel
       .find({ blocked_id: userId })
-      .populate('blocker_id', 'full_name email')
+      .populate('blocker_id', 'full_name email avatar')
       .sort({ created_at: -1 });
   }
 }

@@ -28,8 +28,8 @@ export class ReportService {
     const [reports, total] = await Promise.all([
       this.reportModel
         .find()
-        .populate('reporter_id', 'full_name email')
-        .populate('reported_id', 'full_name email')
+        .populate('reporter_id', 'full_name email avatar')
+        .populate('reported_id', 'full_name email avatar')
         .sort({ date: -1 })
         .skip(skip)
         .limit(limit),
@@ -48,7 +48,7 @@ export class ReportService {
   async getReportsByReportedUser(reportedId: string) {
     return this.reportModel
       .find({ reported_id: reportedId })
-      .populate('reporter_id', 'full_name email')
+      .populate('reporter_id', 'full_name email avatar')
       .sort({ date: -1 });
   }
 
@@ -56,7 +56,7 @@ export class ReportService {
   async getReportsByReporter(reporterId: string) {
     return this.reportModel
       .find({ reporter_id: reporterId })
-      .populate('reported_id', 'full_name email')
+      .populate('reported_id', 'full_name email avatar')
       .sort({ date: -1 });
   }
 
@@ -64,8 +64,8 @@ export class ReportService {
   async getReportById(reportId: string) {
     const report = await this.reportModel
       .findById(reportId)
-      .populate('reporter_id', 'full_name email')
-      .populate('reported_id', 'full_name email');
+      .populate('reporter_id', 'full_name email avatar')
+      .populate('reported_id', 'full_name email avatar');
 
     if (!report) {
       throw new NotFoundException('Không tìm thấy báo cáo');

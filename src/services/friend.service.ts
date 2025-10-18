@@ -1,4 +1,8 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import {
@@ -6,10 +10,7 @@ import {
   FriendRequestDocument,
   FriendRequestStatus,
 } from '../models/friend-request.schema';
-import {
-  Friendship,
-  FriendshipDocument,
-} from '../models/friendship.schema';
+import { Friendship, FriendshipDocument } from '../models/friendship.schema';
 
 @Injectable()
 export class FriendService {
@@ -23,7 +24,9 @@ export class FriendService {
   // Send friend request
   async sendFriendRequest(requesterId: string, requesteeId: string) {
     if (requesterId === requesteeId) {
-      throw new BadRequestException('Không thể gửi lời mời kết bạn cho chính mình');
+      throw new BadRequestException(
+        'Không thể gửi lời mời kết bạn cho chính mình',
+      );
     }
 
     // Check if already friends
@@ -138,7 +141,7 @@ export class FriendService {
         requestee_id: userId,
         status: FriendRequestStatus.Pending,
       })
-      .populate('requester_id', 'full_name email')
+      .populate('requester_id', 'full_name email avatar')
       .sort({ date: -1 });
   }
 
@@ -149,7 +152,7 @@ export class FriendService {
         requester_id: userId,
         status: FriendRequestStatus.Pending,
       })
-      .populate('requestee_id', 'full_name email')
+      .populate('requestee_id', 'full_name email avatar')
       .sort({ date: -1 });
   }
 
@@ -159,8 +162,8 @@ export class FriendService {
       .find({
         $or: [{ user1_id: userId }, { user2_id: userId }],
       })
-      .populate('user1_id', 'full_name email')
-      .populate('user2_id', 'full_name email');
+      .populate('user1_id', 'full_name email avatar')
+      .populate('user2_id', 'full_name email avatar');
 
     // Map to return the other user (not the current user)
     return friendships.map((friendship) => {

@@ -102,6 +102,19 @@ export class User {
   @MinLength(8, { message: 'Mật khẩu phải có ít nhất 8 ký tự' })
   password: string;
 
+  @ApiProperty({
+    example: 'https://example.com/avatar.jpg',
+    description: 'URL avatar của người dùng',
+    required: false,
+  })
+  @Prop({
+    default: function () {
+      return `https://api.dicebear.com/7.x/initials/svg?seed=${this.full_name}`;
+    },
+    type: String,
+  })
+  avatar: string;
+
   @ApiProperty({ default: null, type: 'string', format: 'ObjectId' })
   @Prop({ type: Types.ObjectId, ref: 'Major', default: null })
   @IsMongoId({ message: 'major_id phải là ObjectId hợp lệ' })

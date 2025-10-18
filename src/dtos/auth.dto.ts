@@ -1,7 +1,8 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsEmail,
   IsNotEmpty,
+  IsOptional,
   IsString,
   Length,
   MinLength,
@@ -49,6 +50,14 @@ export class RegisterDto {
   })
   @MinLength(8, { message: 'Mật khẩu phải có ít nhất 8 ký tự' })
   password: string;
+
+  @ApiPropertyOptional({
+    description: 'URL avatar của người dùng',
+    example: 'https://example.com/avatar.jpg',
+  })
+  @IsString({ message: 'Avatar phải là chuỗi ký tự' })
+  @IsOptional()
+  avatar?: string;
 }
 
 export class AuthLoginResponseDto {

@@ -1,8 +1,17 @@
-import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Group, GroupDocument, GroupVisibility } from '../models/group.schema';
-import { GroupMember, GroupMemberDocument, GroupMemberRole } from '../models/group-member.schema';
+import {
+  GroupMember,
+  GroupMemberDocument,
+  GroupMemberRole,
+} from '../models/group-member.schema';
 
 @Injectable()
 export class GroupService {
@@ -32,7 +41,11 @@ export class GroupService {
     const savedGroup = await group.save();
 
     // Auto-add leader as member
-    await this.addMember((savedGroup._id as any).toString(), leaderId, GroupMemberRole.Leader);
+    await this.addMember(
+      (savedGroup._id as any).toString(),
+      leaderId,
+      GroupMemberRole.Leader,
+    );
 
     return savedGroup;
   }
@@ -87,14 +100,16 @@ export class GroupService {
   async getGroupById(groupId: string) {
     const group = await this.groupModel
       .findById(groupId)
-      .populate('leader_id', 'full_name email');
+      .populate('leader_id', 'full_name email avatar');
 
     if (!group) {
       throw new NotFoundException('Không tìm thấy nhóm');
     }
 
     // Get member count
-    const memberCount = await this.groupMemberModel.countDocuments({ group_id: groupId });
+    const memberCount = await this.groupMemberModel.countDocuments({
+      group_id: groupId,
+    });
 
     return {
       ...group.toObject(),
@@ -126,7 +141,7 @@ export class GroupService {
     const [groups, total] = await Promise.all([
       this.groupModel
         .find(filter)
-        .populate('leader_id', 'full_name email')
+        .populate('leader_id', 'full_name email avatar')
         .sort({ created_at: -1 })
         .skip(skip)
         .limit(limit),
@@ -160,7 +175,9 @@ export class GroupService {
     }
 
     // Check member count
-    const memberCount = await this.groupMemberModel.countDocuments({ group_id: groupId });
+    const memberCount = await this.groupMemberModel.countDocuments({
+      group_id: groupId,
+    });
     if (memberCount >= group.max_member) {
       throw new BadRequestException('Nhóm đã đầy');
     }
@@ -178,7 +195,9 @@ export class GroupService {
 
     // Leader cannot leave their own group
     if (group.leader_id.toString() === userId) {
-      throw new BadRequestException('Trưởng nhóm không thể rời nhóm. Hãy chuyển quyền trưởng nhóm hoặc xóa nhóm.');
+      throw new BadRequestException(
+        'Trưởng nhóm không thể rời nhóm. Hãy chuyển quyền trưởng nhóm hoặc xóa nhóm.',
+      );
     }
 
     const result = await this.groupMemberModel.findOneAndDelete({
@@ -197,7 +216,7 @@ export class GroupService {
   async getGroupMembers(groupId: string) {
     return this.groupMemberModel
       .find({ group_id: groupId })
-      .populate('user_id', 'full_name email')
+      .populate('user_id', 'full_name email avatar')
       .sort({ joined_at: 1 });
   }
 
@@ -230,7 +249,11 @@ export class GroupService {
   }
 
   // Transfer leadership
-  async transferLeadership(groupId: string, currentLeaderId: string, newLeaderId: string) {
+  async transferLeadership(
+    groupId: string,
+    currentLeaderId: string,
+    newLeaderId: string,
+  ) {
     const group = await this.groupModel.findById(groupId);
 
     if (!group) {
@@ -248,7 +271,9 @@ export class GroupService {
     });
 
     if (!newLeader) {
-      throw new BadRequestException('Người được chuyển quyền phải là thành viên của nhóm');
+      throw new BadRequestException(
+        'Người được chuyển quyền phải là thành viên của nhóm',
+      );
     }
 
     // Update group leader
@@ -269,7 +294,11 @@ export class GroupService {
   }
 
   // Helper: Add member
-  private async addMember(groupId: string, userId: string, role: GroupMemberRole) {
+  private async addMember(
+    groupId: string,
+    userId: string,
+    role: GroupMemberRole,
+  ) {
     const member = new this.groupMemberModel({
       group_id: new Types.ObjectId(groupId),
       user_id: new Types.ObjectId(userId),

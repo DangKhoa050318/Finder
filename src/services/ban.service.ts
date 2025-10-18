@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Ban, BanDocument, BanStatus } from '../models/ban.schema';
@@ -39,11 +43,9 @@ export class BanService {
     banId: string,
     updates: { reason?: string; until?: Date | null; status?: BanStatus },
   ) {
-    const ban = await this.banModel.findByIdAndUpdate(
-      banId,
-      { $set: updates },
-      { new: true },
-    ).populate('user_id banned_by', 'full_name email');
+    const ban = await this.banModel
+      .findByIdAndUpdate(banId, { $set: updates }, { new: true })
+      .populate('user_id banned_by', 'full_name email avatar');
 
     if (!ban) {
       throw new NotFoundException('Không tìm thấy lệnh ban');
@@ -95,19 +97,15 @@ export class BanService {
   }
 
   // Get all bans (admin only)
-  async getAllBans(
-    page: number = 1,
-    limit: number = 20,
-    status?: BanStatus,
-  ) {
+  async getAllBans(page: number = 1, limit: number = 20, status?: BanStatus) {
     const skip = (page - 1) * limit;
     const filter = status ? { status } : {};
 
     const [bans, total] = await Promise.all([
       this.banModel
         .find(filter)
-        .populate('user_id', 'full_name email')
-        .populate('banned_by', 'full_name email')
+        .populate('user_id', 'full_name email avatar')
+        .populate('banned_by', 'full_name email avatar')
         .sort({ date: -1 })
         .skip(skip)
         .limit(limit),
@@ -126,7 +124,7 @@ export class BanService {
   async getUserBanHistory(userId: string) {
     return this.banModel
       .find({ user_id: userId })
-      .populate('banned_by', 'full_name email')
+      .populate('banned_by', 'full_name email avatar')
       .sort({ date: -1 });
   }
 
@@ -134,8 +132,8 @@ export class BanService {
   async getBanById(banId: string) {
     const ban = await this.banModel
       .findById(banId)
-      .populate('user_id', 'full_name email')
-      .populate('banned_by', 'full_name email');
+      .populate('user_id', 'full_name email avatar')
+      .populate('banned_by', 'full_name email avatar');
 
     if (!ban) {
       throw new NotFoundException('Không tìm thấy lệnh ban');
@@ -165,7 +163,7 @@ export class BanService {
   // Get ban details with reason (for showing to banned user)
   async getBanDetailsForUser(userId: string) {
     const ban = await this.getActiveBan(userId);
-    
+
     if (!ban) {
       return null;
     }

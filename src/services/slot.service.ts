@@ -1,9 +1,17 @@
-import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Slot, SlotDocument, SlotType } from '../models/slot.schema';
 import { SlotGroup, SlotGroupDocument } from '../models/slot-group.schema';
-import { SlotPrivate, SlotPrivateDocument } from '../models/slot-private.schema';
+import {
+  SlotPrivate,
+  SlotPrivateDocument,
+} from '../models/slot-private.schema';
 
 @Injectable()
 export class SlotService {
@@ -26,7 +34,9 @@ export class SlotService {
     endTime: Date,
   ) {
     if (startTime >= endTime) {
-      throw new BadRequestException('Thời gian bắt đầu phải trước thời gian kết thúc');
+      throw new BadRequestException(
+        'Thời gian bắt đầu phải trước thời gian kết thúc',
+      );
     }
 
     if (startTime < new Date()) {
@@ -65,7 +75,9 @@ export class SlotService {
     endTime: Date,
   ) {
     if (startTime >= endTime) {
-      throw new BadRequestException('Thời gian bắt đầu phải trước thời gian kết thúc');
+      throw new BadRequestException(
+        'Thời gian bắt đầu phải trước thời gian kết thúc',
+      );
     }
 
     if (startTime < new Date()) {
@@ -119,8 +131,14 @@ export class SlotService {
       throw new ForbiddenException('Chỉ người tạo mới có thể chỉnh sửa slot');
     }
 
-    if (updates.start_time && updates.end_time && updates.start_time >= updates.end_time) {
-      throw new BadRequestException('Thời gian bắt đầu phải trước thời gian kết thúc');
+    if (
+      updates.start_time &&
+      updates.end_time &&
+      updates.start_time >= updates.end_time
+    ) {
+      throw new BadRequestException(
+        'Thời gian bắt đầu phải trước thời gian kết thúc',
+      );
     }
 
     Object.assign(slot, updates);
@@ -155,7 +173,7 @@ export class SlotService {
   async getSlotById(slotId: string) {
     const slot = await this.slotModel
       .findById(slotId)
-      .populate('created_by', 'full_name email');
+      .populate('created_by', 'full_name email avatar');
 
     if (!slot) {
       throw new NotFoundException('Không tìm thấy slot');
@@ -174,7 +192,7 @@ export class SlotService {
     } else {
       const slotPrivate = await this.slotPrivateModel
         .findOne({ slot_id: slotId })
-        .populate('user1_id user2_id', 'full_name email');
+        .populate('user1_id user2_id', 'full_name email avatar');
 
       return {
         ...slot.toObject(),
@@ -194,7 +212,7 @@ export class SlotService {
     // Get slots created by user
     const createdSlots = await this.slotModel
       .find({ ...filter, created_by: userId })
-      .populate('created_by', 'full_name email')
+      .populate('created_by', 'full_name email avatar')
       .sort({ start_time: -1 });
 
     // Get private slots where user is participant
@@ -202,10 +220,10 @@ export class SlotService {
       $or: [{ user1_id: userId }, { user2_id: userId }],
     });
 
-    const privateSlotIds = privateSlotRecords.map(r => r.slot_id);
+    const privateSlotIds = privateSlotRecords.map((r) => r.slot_id);
     const privateSlots = await this.slotModel
       .find({ _id: { $in: privateSlotIds }, created_by: { $ne: userId } })
-      .populate('created_by', 'full_name email')
+      .populate('created_by', 'full_name email avatar')
       .sort({ start_time: -1 });
 
     // Combine and sort
@@ -227,7 +245,7 @@ export class SlotService {
         created_by: userId,
         start_time: { $gte: now, $lte: nextWeek },
       })
-      .populate('created_by', 'full_name email')
+      .populate('created_by', 'full_name email avatar')
       .sort({ start_time: 1 });
 
     // Get private slots
@@ -235,14 +253,14 @@ export class SlotService {
       $or: [{ user1_id: userId }, { user2_id: userId }],
     });
 
-    const privateSlotIds = privateSlotRecords.map(r => r.slot_id);
+    const privateSlotIds = privateSlotRecords.map((r) => r.slot_id);
     const privateSlots = await this.slotModel
       .find({
         _id: { $in: privateSlotIds },
         created_by: { $ne: userId },
         start_time: { $gte: now, $lte: nextWeek },
       })
-      .populate('created_by', 'full_name email')
+      .populate('created_by', 'full_name email avatar')
       .sort({ start_time: 1 });
 
     return [...createdSlots, ...privateSlots].sort(
@@ -253,11 +271,11 @@ export class SlotService {
   // Get slots by group
   async getGroupSlots(groupId: string) {
     const slotGroups = await this.slotGroupModel.find({ group_id: groupId });
-    const slotIds = slotGroups.map(sg => sg.slot_id);
+    const slotIds = slotGroups.map((sg) => sg.slot_id);
 
     return this.slotModel
       .find({ _id: { $in: slotIds } })
-      .populate('created_by', 'full_name email')
+      .populate('created_by', 'full_name email avatar')
       .sort({ start_time: -1 });
   }
 

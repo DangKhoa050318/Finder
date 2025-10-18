@@ -26,12 +26,15 @@ async function bootstrap() {
     .setTitle('Study Together API')
     .setDescription('API documentation')
     .setVersion('1.0')
+    .addBearerAuth()
     .build();
 
   const cfg = app.select(GlobalModule).get(ConfigService);
   app.setGlobalPrefix(cfg.env.prefix);
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup(cfg.env.swaggerPath, app, document);
+  SwaggerModule.setup(cfg.env.swaggerPath, app, document, {
+    jsonDocumentUrl: `${cfg.env.swaggerPath}-json`,
+  });
 
   app.useGlobalPipes(
     new ValidationPipe({

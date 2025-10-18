@@ -1,7 +1,16 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
-import { Reminder, ReminderDocument, ReminderMethod, ReminderStatus } from '../models/reminder.schema';
+import {
+  Reminder,
+  ReminderDocument,
+  ReminderMethod,
+  ReminderStatus,
+} from '../models/reminder.schema';
 
 @Injectable()
 export class ReminderService {
@@ -47,7 +56,11 @@ export class ReminderService {
   }
 
   // Auto create reminder when registering for slot (15 minutes before)
-  async autoCreateReminder(slotId: string, userId: string, slotStartTime: Date) {
+  async autoCreateReminder(
+    slotId: string,
+    userId: string,
+    slotStartTime: Date,
+  ) {
     const remindTime = new Date(slotStartTime.getTime() - 15 * 60 * 1000); // 15 minutes before
 
     // Only create if slot is in future
@@ -85,7 +98,9 @@ export class ReminderService {
     }
 
     if (reminder.status !== ReminderStatus.Pending) {
-      throw new BadRequestException('Không thể chỉnh sửa nhắc nhở đã gửi hoặc thất bại');
+      throw new BadRequestException(
+        'Không thể chỉnh sửa nhắc nhở đã gửi hoặc thất bại',
+      );
     }
 
     if (updates.remind_at && updates.remind_at <= new Date()) {
@@ -109,7 +124,9 @@ export class ReminderService {
     }
 
     if (reminder.status !== ReminderStatus.Pending) {
-      throw new BadRequestException('Không thể xóa nhắc nhở đã gửi hoặc thất bại');
+      throw new BadRequestException(
+        'Không thể xóa nhắc nhở đã gửi hoặc thất bại',
+      );
     }
 
     await this.reminderModel.findByIdAndDelete(reminderId);
@@ -128,7 +145,7 @@ export class ReminderService {
         remind_at: { $gte: now, $lte: fiveMinutesFromNow },
       })
       .populate('slot_id', 'title start_time end_time')
-      .populate('user_id', 'full_name email');
+      .populate('user_id', 'full_name email avatar');
   }
 
   // Mark reminder as sent
@@ -191,7 +208,7 @@ export class ReminderService {
   async getSlotReminders(slotId: string) {
     return this.reminderModel
       .find({ slot_id: slotId })
-      .populate('user_id', 'full_name email')
+      .populate('user_id', 'full_name email avatar')
       .sort({ remind_at: 1 });
   }
 

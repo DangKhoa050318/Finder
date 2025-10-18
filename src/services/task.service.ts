@@ -1,7 +1,17 @@
-import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
-import { Task, TaskDocument, TaskStatus, TaskPriority } from '../models/task.schema';
+import {
+  Task,
+  TaskDocument,
+  TaskStatus,
+  TaskPriority,
+} from '../models/task.schema';
 
 @Injectable()
 export class TaskService {
@@ -79,7 +89,7 @@ export class TaskService {
   async getTaskById(taskId: string) {
     const task = await this.taskModel
       .findById(taskId)
-      .populate('created_by', 'full_name email')
+      .populate('created_by', 'full_name email avatar')
       .populate('slot_id', 'title start_time end_time');
 
     if (!task) {
@@ -130,7 +140,7 @@ export class TaskService {
   async getTasksBySlot(slotId: string) {
     return this.taskModel
       .find({ slot_id: slotId })
-      .populate('created_by', 'full_name email')
+      .populate('created_by', 'full_name email avatar')
       .sort({ priority: -1, due_date: 1 });
   }
 
@@ -191,7 +201,9 @@ export class TaskService {
     }
 
     if (task.created_by.toString() !== userId) {
-      throw new ForbiddenException('Chỉ người tạo mới có thể cập nhật trạng thái task');
+      throw new ForbiddenException(
+        'Chỉ người tạo mới có thể cập nhật trạng thái task',
+      );
     }
 
     task.status = status;
@@ -213,7 +225,7 @@ export class TaskService {
 
     const now = new Date();
 
-    tasks.forEach(task => {
+    tasks.forEach((task) => {
       switch (task.status) {
         case TaskStatus.Todo:
           stats.todo++;

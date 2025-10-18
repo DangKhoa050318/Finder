@@ -12,6 +12,7 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  IsUrl,
   MinLength,
 } from 'class-validator';
 import { Day, TimeSlot, User } from '../models/user.schema';
@@ -38,6 +39,14 @@ export class UpdateUserDto {
   @IsMongoId({ message: 'major_id phải là ObjectId hợp lệ' })
   @IsOptional()
   major_id?: string;
+
+  @ApiPropertyOptional({
+    description: 'URL avatar của người dùng',
+    example: 'https://example.com/avatar.jpg',
+  })
+  @IsString({ message: 'Avatar phải là chuỗi ký tự' })
+  @IsOptional()
+  avatar?: string;
 
   @ApiPropertyOptional({
     description: 'Các khung giờ học mong muốn',

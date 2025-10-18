@@ -1,7 +1,15 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
-import { Attendance, AttendanceDocument, AttendanceStatus } from '../models/attendance.schema';
+import {
+  Attendance,
+  AttendanceDocument,
+  AttendanceStatus,
+} from '../models/attendance.schema';
 
 @Injectable()
 export class AttendanceService {
@@ -64,7 +72,9 @@ export class AttendanceService {
     }
 
     if (attendance.status !== AttendanceStatus.Attending) {
-      throw new BadRequestException('Phải bắt đầu tham gia trước khi hoàn thành');
+      throw new BadRequestException(
+        'Phải bắt đầu tham gia trước khi hoàn thành',
+      );
     }
 
     attendance.status = AttendanceStatus.Completed;
@@ -98,7 +108,9 @@ export class AttendanceService {
     });
 
     if (!result) {
-      throw new NotFoundException('Không tìm thấy đăng ký hoặc đã bắt đầu tham gia');
+      throw new NotFoundException(
+        'Không tìm thấy đăng ký hoặc đã bắt đầu tham gia',
+      );
     }
 
     return { message: 'Đã hủy đăng ký thành công' };
@@ -146,7 +158,7 @@ export class AttendanceService {
 
     return this.attendanceModel
       .find(filter)
-      .populate('user_id', 'full_name email')
+      .populate('user_id', 'full_name email avatar')
       .sort({ started_at: 1 });
   }
 
@@ -162,7 +174,7 @@ export class AttendanceService {
       absent: 0,
     };
 
-    attendances.forEach(a => {
+    attendances.forEach((a) => {
       switch (a.status) {
         case AttendanceStatus.Registered:
           stats.registered++;
