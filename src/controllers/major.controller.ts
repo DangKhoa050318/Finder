@@ -16,7 +16,12 @@ import {
   ApiParam,
 } from '@nestjs/swagger';
 import { MajorService } from '../services/major.service';
-import { CreateMajorDto, UpdateMajorDto } from '../dtos/major.dto';
+import {
+  CreateMajorDto,
+  UpdateMajorDto,
+  MajorResponseDto,
+  MajorListResponseDto,
+} from '../dtos/major.dto';
 import { Public } from 'src/decorators/public.decorator';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import { RolesGuard } from '../guards/roles.guard';
@@ -31,7 +36,11 @@ export class MajorController {
   @Public()
   @Get()
   @ApiOperation({ summary: 'Lấy danh sách tất cả các ngành' })
-  @ApiResponse({ status: 200, description: 'Danh sách các ngành' })
+  @ApiResponse({
+    status: 200,
+    description: 'Danh sách các ngành',
+    type: [MajorResponseDto],
+  })
   async getMajors() {
     return this.majorService.getAll();
   }
@@ -40,7 +49,11 @@ export class MajorController {
   @Get(':id')
   @ApiOperation({ summary: 'Lấy thông tin ngành theo ID' })
   @ApiParam({ name: 'id', description: 'ID ngành' })
-  @ApiResponse({ status: 200, description: 'Thông tin ngành' })
+  @ApiResponse({
+    status: 200,
+    description: 'Thông tin ngành',
+    type: MajorResponseDto,
+  })
   @ApiResponse({ status: 404, description: 'Không tìm thấy ngành' })
   async getMajorById(@Param('id') id: string) {
     return this.majorService.getById(id);
@@ -51,7 +64,11 @@ export class MajorController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.Admin)
   @ApiOperation({ summary: 'Tạo ngành mới (Chỉ dành cho admin)' })
-  @ApiResponse({ status: 201, description: 'Ngành đã được tạo thành công' })
+  @ApiResponse({
+    status: 201,
+    description: 'Ngành đã được tạo thành công',
+    type: MajorResponseDto,
+  })
   @ApiResponse({ status: 400, description: 'Mã ngành đã tồn tại' })
   @ApiResponse({ status: 403, description: 'Không có quyền truy cập' })
   async createMajor(@Body() dto: CreateMajorDto) {
@@ -67,6 +84,7 @@ export class MajorController {
   @ApiResponse({
     status: 200,
     description: 'Ngành đã được cập nhật thành công',
+    type: MajorResponseDto,
   })
   @ApiResponse({ status: 404, description: 'Không tìm thấy ngành' })
   @ApiResponse({ status: 403, description: 'Không có quyền truy cập' })
@@ -83,7 +101,16 @@ export class MajorController {
   @Roles(Role.Admin)
   @ApiOperation({ summary: 'Xóa ngành (Chỉ dành cho admin)' })
   @ApiParam({ name: 'id', description: 'ID ngành' })
-  @ApiResponse({ status: 200, description: 'Ngành đã được xóa thành công' })
+  @ApiResponse({
+    status: 200,
+    description: 'Ngành đã được xóa thành công',
+    schema: {
+      type: 'object',
+      properties: {
+        message: { type: 'string', example: 'Major deleted successfully' },
+      },
+    },
+  })
   @ApiResponse({ status: 404, description: 'Không tìm thấy ngành' })
   @ApiResponse({ status: 403, description: 'Không có quyền truy cập' })
   async deleteMajor(@Param('id') id: string) {

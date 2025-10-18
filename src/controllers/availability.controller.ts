@@ -19,6 +19,8 @@ import { AvailabilityService } from '../services/availability.service';
 import {
   CreateAvailabilityDto,
   UpdateAvailabilityDto,
+  AvailabilityResponseDto,
+  AvailabilityListResponseDto,
 } from '../dtos/availability.dto';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import { User } from '../decorators/user.decorator';
@@ -37,6 +39,7 @@ export class AvailabilityController {
   @ApiResponse({
     status: 201,
     description: 'Khung giờ rảnh đã được tạo thành công',
+    type: AvailabilityResponseDto,
   })
   @ApiResponse({
     status: 400,
@@ -50,7 +53,11 @@ export class AvailabilityController {
   @Get('user/:userId')
   @ApiOperation({ summary: 'Lấy danh sách khung giờ rảnh theo người dùng' })
   @ApiParam({ name: 'userId', description: 'ID người dùng' })
-  @ApiResponse({ status: 200, description: 'Danh sách khung giờ rảnh' })
+  @ApiResponse({
+    status: 200,
+    description: 'Danh sách khung giờ rảnh',
+    type: [AvailabilityResponseDto],
+  })
   listByUser(@Param('userId') userId: string) {
     return this.availabilityService.listByUser(userId);
   }
@@ -63,6 +70,7 @@ export class AvailabilityController {
   @ApiResponse({
     status: 200,
     description: 'Khung giờ rảnh đã được cập nhật thành công',
+    type: AvailabilityResponseDto,
   })
   @ApiResponse({ status: 404, description: 'Không tìm thấy khung giờ rảnh' })
   @ApiResponse({
@@ -81,6 +89,15 @@ export class AvailabilityController {
   @ApiResponse({
     status: 200,
     description: 'Khung giờ rảnh đã được xóa thành công',
+    schema: {
+      type: 'object',
+      properties: {
+        message: {
+          type: 'string',
+          example: 'Availability deleted successfully',
+        },
+      },
+    },
   })
   @ApiResponse({ status: 404, description: 'Không tìm thấy khung giờ rảnh' })
   remove(@Param('id') id: string) {
