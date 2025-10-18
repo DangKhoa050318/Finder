@@ -6,7 +6,6 @@ import {
   Param,
   Query,
   UseGuards,
-  Request,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -19,6 +18,8 @@ import {
 import { AttendanceService } from '../services/attendance.service';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import { AttendanceStatus } from '../models/attendance.schema';
+import { User } from '../decorators/user.decorator';
+import type { JwtPayload } from '../types/jwt';
 
 @ApiTags('Attendance')
 @ApiBearerAuth()
@@ -33,10 +34,10 @@ export class AttendanceController {
   @ApiResponse({ status: 201, description: 'Đăng ký thành công' })
   @ApiResponse({ status: 400, description: 'Đã đăng ký' })
   async registerForSlot(
-    @Request() req,
+    @User() { _id }: JwtPayload,
     @Param('slotId') slotId: string,
   ) {
-    return this.attendanceService.registerForSlot(req.user.id, slotId);
+    return this.attendanceService.registerForSlot(_id, slotId);
   }
 
   @Post('start/:slotId')
@@ -45,10 +46,10 @@ export class AttendanceController {
   @ApiResponse({ status: 200, description: 'Bắt đầu tham gia' })
   @ApiResponse({ status: 404, description: 'Chưa đăng ký' })
   async startAttending(
-    @Request() req,
+    @User() { _id }: JwtPayload,
     @Param('slotId') slotId: string,
   ) {
-    return this.attendanceService.startAttending(req.user.id, slotId);
+    return this.attendanceService.startAttending(_id, slotId);
   }
 
   @Post('complete/:slotId')
@@ -57,10 +58,10 @@ export class AttendanceController {
   @ApiResponse({ status: 200, description: 'Hoàn thành tham gia' })
   @ApiResponse({ status: 400, description: 'Phải bắt đầu tham gia trước' })
   async completeAttendance(
-    @Request() req,
+    @User() { _id }: JwtPayload,
     @Param('slotId') slotId: string,
   ) {
-    return this.attendanceService.completeAttendance(req.user.id, slotId);
+    return this.attendanceService.completeAttendance(_id, slotId);
   }
 
   @Post('absent/:slotId')
@@ -69,10 +70,10 @@ export class AttendanceController {
   @ApiResponse({ status: 200, description: 'Đã đánh dấu là vắng mặt' })
   @ApiResponse({ status: 404, description: 'Chưa đăng ký' })
   async markAbsent(
-    @Request() req,
+    @User() { _id }: JwtPayload,
     @Param('slotId') slotId: string,
   ) {
-    return this.attendanceService.markAbsent(req.user.id, slotId);
+    return this.attendanceService.markAbsent(_id, slotId);
   }
 
   @Delete('cancel/:slotId')
@@ -81,10 +82,10 @@ export class AttendanceController {
   @ApiResponse({ status: 200, description: 'Đã hủy đăng ký' })
   @ApiResponse({ status: 404, description: 'Không tìm thấy đăng ký' })
   async cancelRegistration(
-    @Request() req,
+    @User() { _id }: JwtPayload,
     @Param('slotId') slotId: string,
   ) {
-    return this.attendanceService.cancelRegistration(req.user.id, slotId);
+    return this.attendanceService.cancelRegistration(_id, slotId);
   }
 
   @Get('my-attendances')
@@ -92,19 +93,17 @@ export class AttendanceController {
   @ApiQuery({ name: 'status', required: false, enum: AttendanceStatus })
   @ApiQuery({ name: 'page', required: false, type: Number })
   @ApiQuery({ name: 'limit', required: false, type: Number })
-  @ApiResponse({ status: 200, description: 'Danh sách tham gia của người dùng' })
+  @ApiResponse({
+    status: 200,
+    description: 'Danh sách tham gia của người dùng',
+  })
   async getUserAttendances(
-    @Request() req,
+    @User() { _id }: JwtPayload,
     @Query('status') status?: AttendanceStatus,
     @Query('page') page?: number,
     @Query('limit') limit?: number,
   ) {
-    return this.attendanceService.getUserAttendances(
-      req.user.id,
-      status,
-      page,
-      limit,
-    );
+    return this.attendanceService.getUserAttendances(_id, status, page, limit);
   }
 
   @Get('slot/:slotId/attendees')
@@ -132,24 +131,23 @@ export class AttendanceController {
   @ApiParam({ name: 'slotId', description: 'ID slot' })
   @ApiResponse({ status: 200, description: 'Trả về true/false' })
   async isRegistered(
-    @Request() req,
+    @User() { _id }: JwtPayload,
     @Param('slotId') slotId: string,
   ) {
-    const isRegistered = await this.attendanceService.isRegistered(
-      req.user.id,
-      slotId,
-    );
+    const isRegistered = await this.attendanceService.isRegistered(_id, slotId);
     return { isRegistered };
   }
 
   @Get('slot/:slotId/my-attendance')
-  @ApiOperation({ summary: 'Lấy thông tin tham gia của người dùng cho slot cụ thể' })
+  @ApiOperation({
+    summary: 'Lấy thông tin tham gia của người dùng cho slot cụ thể',
+  })
   @ApiParam({ name: 'slotId', description: 'ID slot' })
   @ApiResponse({ status: 200, description: 'Chi tiết tham gia' })
   async getUserSlotAttendance(
-    @Request() req,
+    @User() { _id }: JwtPayload,
     @Param('slotId') slotId: string,
   ) {
-    return this.attendanceService.getUserSlotAttendance(req.user.id, slotId);
+    return this.attendanceService.getUserSlotAttendance(_id, slotId);
   }
 }

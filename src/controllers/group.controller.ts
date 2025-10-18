@@ -8,8 +8,9 @@ import {
   Param,
   Query,
   UseGuards,
-  Request,
 } from '@nestjs/common';
+import { User } from '../decorators/user.decorator';
+import type { JwtPayload } from '../types/jwt';
 import {
   ApiTags,
   ApiOperation,
@@ -34,12 +35,9 @@ export class GroupController {
   @ApiOperation({ summary: 'Tạo một group' })
   @ApiResponse({ status: 201, description: 'Group đã được tạo thành công' })
   @ApiResponse({ status: 400, description: 'Yêu cầu không hợp lệ' })
-  async createGroup(
-    @Request() req,
-    @Body() dto: CreateGroupDto,
-  ) {
+  async createGroup(@User() { _id }: JwtPayload, @Body() dto: CreateGroupDto) {
     return this.groupService.createGroup(
-      req.user.id,
+      _id,
       dto.group_name,
       dto.description,
       dto.visibility,
@@ -50,15 +48,18 @@ export class GroupController {
   @Put(':groupId')
   @ApiOperation({ summary: 'Cập nhật group (Chỉ dành cho leader)' })
   @ApiParam({ name: 'groupId', description: 'ID group' })
-  @ApiResponse({ status: 200, description: 'Group đã được cập nhật thành công' })
+  @ApiResponse({
+    status: 200,
+    description: 'Group đã được cập nhật thành công',
+  })
   @ApiResponse({ status: 403, description: 'Chỉ leader mới có thể cập nhật' })
   @ApiResponse({ status: 404, description: 'Không tìm thấy group' })
   async updateGroup(
-    @Request() req,
+    @User() { _id }: JwtPayload,
     @Param('groupId') groupId: string,
     @Body() dto: UpdateGroupDto,
   ) {
-    return this.groupService.updateGroup(groupId, req.user.id, dto);
+    return this.groupService.updateGroup(groupId, _id, dto);
   }
 
   @Delete(':groupId')
@@ -68,10 +69,10 @@ export class GroupController {
   @ApiResponse({ status: 403, description: 'Chỉ leader mới có thể xóa' })
   @ApiResponse({ status: 404, description: 'Không tìm thấy group' })
   async deleteGroup(
-    @Request() req,
+    @User() { _id }: JwtPayload,
     @Param('groupId') groupId: string,
   ) {
-    return this.groupService.deleteGroup(groupId, req.user.id);
+    return this.groupService.deleteGroup(groupId, _id);
   }
 
   @Get()
@@ -103,13 +104,16 @@ export class GroupController {
   @ApiOperation({ summary: 'Tham gia một group' })
   @ApiParam({ name: 'groupId', description: 'ID group' })
   @ApiResponse({ status: 200, description: 'Tham gia group thành công' })
-  @ApiResponse({ status: 400, description: 'Đã là thành viên hoặc group đã đầy' })
+  @ApiResponse({
+    status: 400,
+    description: 'Đã là thành viên hoặc group đã đầy',
+  })
   @ApiResponse({ status: 404, description: 'Không tìm thấy group' })
   async joinGroup(
-    @Request() req,
+    @User() { _id }: JwtPayload,
     @Param('groupId') groupId: string,
   ) {
-    return this.groupService.joinGroup(groupId, req.user.id);
+    return this.groupService.joinGroup(groupId, _id);
   }
 
   @Post(':groupId/leave')
@@ -119,10 +123,10 @@ export class GroupController {
   @ApiResponse({ status: 400, description: 'Leader không thể rời' })
   @ApiResponse({ status: 404, description: 'Không phải là thành viên' })
   async leaveGroup(
-    @Request() req,
+    @User() { _id }: JwtPayload,
     @Param('groupId') groupId: string,
   ) {
-    return this.groupService.leaveGroup(groupId, req.user.id);
+    return this.groupService.leaveGroup(groupId, _id);
   }
 
   @Get(':groupId/members')
@@ -138,12 +142,15 @@ export class GroupController {
   @ApiParam({ name: 'groupId', description: 'ID group' })
   @ApiParam({ name: 'memberId', description: 'ID người dùng thành viên' })
   @ApiResponse({ status: 200, description: 'Đã xóa thành viên thành công' })
-  @ApiResponse({ status: 403, description: 'Chỉ leader mới có thể xóa thành viên' })
+  @ApiResponse({
+    status: 403,
+    description: 'Chỉ leader mới có thể xóa thành viên',
+  })
   async removeMember(
-    @Request() req,
+    @User() { _id }: JwtPayload,
     @Param('groupId') groupId: string,
     @Param('memberId') memberId: string,
   ) {
-    return this.groupService.removeMember(groupId, req.user.id, memberId);
+    return this.groupService.removeMember(groupId, _id, memberId);
   }
 }

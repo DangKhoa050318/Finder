@@ -7,8 +7,9 @@ import {
   Param,
   Query,
   UseGuards,
-  Request,
 } from '@nestjs/common';
+import { User } from '../decorators/user.decorator';
+import type { JwtPayload } from '../types/jwt';
 import {
   ApiTags,
   ApiOperation,
@@ -36,20 +37,18 @@ export class ReportController {
   @ApiResponse({ status: 201, description: 'Báo cáo đã được tạo thành công' })
   @ApiResponse({ status: 400, description: 'Yêu cầu không hợp lệ' })
   async createReport(
-    @Request() req,
+    @User() { _id }: JwtPayload,
     @Body() dto: CreateReportDto,
   ) {
-    return this.reportService.createReport(
-      req.user.id,
-      dto.reported_id,
-      dto.reason,
-    );
+    return this.reportService.createReport(_id, dto.reported_id, dto.reason);
   }
 
   @Get()
   @UseGuards(RolesGuard)
   @Roles(Role.Admin)
-  @ApiOperation({ summary: 'Lấy danh sách tất cả báo cáo (Chỉ dành cho admin)' })
+  @ApiOperation({
+    summary: 'Lấy danh sách tất cả báo cáo (Chỉ dành cho admin)',
+  })
   @ApiQuery({ name: 'page', required: false, type: Number })
   @ApiQuery({ name: 'limit', required: false, type: Number })
   @ApiResponse({ status: 200, description: 'Danh sách báo cáo' })
@@ -63,7 +62,9 @@ export class ReportController {
   @Get('user/:userId')
   @UseGuards(RolesGuard)
   @Roles(Role.Admin)
-  @ApiOperation({ summary: 'Lấy danh sách báo cáo theo người bị báo cáo (Chỉ dành cho admin)' })
+  @ApiOperation({
+    summary: 'Lấy danh sách báo cáo theo người bị báo cáo (Chỉ dành cho admin)',
+  })
   @ApiParam({ name: 'userId', description: 'ID người dùng bị báo cáo' })
   @ApiResponse({ status: 200, description: 'Danh sách báo cáo' })
   async getReportsByReportedUser(@Param('userId') userId: string) {
@@ -73,8 +74,8 @@ export class ReportController {
   @Get('my-reports')
   @ApiOperation({ summary: 'Lấy danh sách báo cáo của người dùng hiện tại' })
   @ApiResponse({ status: 200, description: 'Danh sách báo cáo' })
-  async getMyReports(@Request() req) {
-    return this.reportService.getReportsByReporter(req.user.id);
+  async getMyReports(@User() { _id }: JwtPayload) {
+    return this.reportService.getReportsByReporter(_id);
   }
 
   @Get(':reportId')
@@ -102,7 +103,9 @@ export class ReportController {
   @Get('count/:userId')
   @UseGuards(RolesGuard)
   @Roles(Role.Admin)
-  @ApiOperation({ summary: 'Lấy số lượng báo cáo cho người dùng (Chỉ dành cho admin)' })
+  @ApiOperation({
+    summary: 'Lấy số lượng báo cáo cho người dùng (Chỉ dành cho admin)',
+  })
   @ApiParam({ name: 'userId', description: 'ID người dùng' })
   @ApiResponse({ status: 200, description: 'Số lượng báo cáo' })
   async getReportCount(@Param('userId') userId: string) {

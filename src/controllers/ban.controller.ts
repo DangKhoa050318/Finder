@@ -8,8 +8,9 @@ import {
   Param,
   Query,
   UseGuards,
-  Request,
 } from '@nestjs/common';
+import { User } from '../decorators/user.decorator';
+import type { JwtPayload } from '../types/jwt';
 import {
   ApiTags,
   ApiOperation,
@@ -38,17 +39,9 @@ export class BanController {
   @ApiOperation({ summary: 'Cấm một người dùng (Chỉ dành cho admin)' })
   @ApiResponse({ status: 201, description: 'Đã cấm người dùng thành công' })
   @ApiResponse({ status: 400, description: 'Người dùng đã bị cấm' })
-  async banUser(
-    @Request() req,
-    @Body() dto: BanUserDto,
-  ) {
+  async banUser(@User() { _id }: JwtPayload, @Body() dto: BanUserDto) {
     const until = dto.until ? new Date(dto.until) : null;
-    return this.banService.banUser(
-      dto.user_id,
-      req.user.id,
-      dto.reason,
-      until,
-    );
+    return this.banService.banUser(dto.user_id, _id, dto.reason, until);
   }
 
   @Put(':banId')
@@ -56,10 +49,7 @@ export class BanController {
   @ApiParam({ name: 'banId', description: 'ID lệnh cấm' })
   @ApiResponse({ status: 200, description: 'Đã cập nhật lệnh cấm thành công' })
   @ApiResponse({ status: 404, description: 'Không tìm thấy lệnh cấm' })
-  async updateBan(
-    @Param('banId') banId: string,
-    @Body() dto: UpdateBanDto,
-  ) {
+  async updateBan(@Param('banId') banId: string, @Body() dto: UpdateBanDto) {
     const updates: any = { ...dto };
     if (dto.until) {
       updates.until = new Date(dto.until);
@@ -91,7 +81,9 @@ export class BanController {
   }
 
   @Get('user/:userId/history')
-  @ApiOperation({ summary: 'Lấy lịch sử cấm của người dùng (Chỉ dành cho admin)' })
+  @ApiOperation({
+    summary: 'Lấy lịch sử cấm của người dùng (Chỉ dành cho admin)',
+  })
   @ApiParam({ name: 'userId', description: 'ID người dùng' })
   @ApiResponse({ status: 200, description: 'Lịch sử cấm' })
   async getUserBanHistory(@Param('userId') userId: string) {
@@ -108,7 +100,9 @@ export class BanController {
   }
 
   @Get('check/:userId')
-  @ApiOperation({ summary: 'Kiểm tra xem người dùng có bị cấm hay không (Chỉ dành cho admin)' })
+  @ApiOperation({
+    summary: 'Kiểm tra xem người dùng có bị cấm hay không (Chỉ dành cho admin)',
+  })
   @ApiParam({ name: 'userId', description: 'ID người dùng' })
   @ApiResponse({ status: 200, description: 'Trả về true/false' })
   async isUserBanned(@Param('userId') userId: string) {

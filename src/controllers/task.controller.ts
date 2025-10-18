@@ -8,7 +8,6 @@ import {
   Param,
   Query,
   UseGuards,
-  Request,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -22,6 +21,8 @@ import { TaskService } from '../services/task.service';
 import { CreateTaskDto, UpdateTaskDto } from '../dtos/task.dto';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import { TaskStatus, TaskPriority } from '../models/task.schema';
+import { User } from '../decorators/user.decorator';
+import type { JwtPayload } from '../types/jwt';
 
 @ApiTags('Tasks')
 @ApiBearerAuth()
@@ -33,14 +34,11 @@ export class TaskController {
   @Post()
   @ApiOperation({ summary: 'Tạo task' })
   @ApiResponse({ status: 201, description: 'Task được tạo thành công' })
-  async createTask(
-    @Request() req,
-    @Body() dto: CreateTaskDto,
-  ) {
+  async createTask(@User() { _id }: JwtPayload, @Body() dto: CreateTaskDto) {
     const dueDate = dto.due_date ? new Date(dto.due_date) : undefined;
 
     return this.taskService.createTask(
-      req.user.id,
+      _id,
       dto.title,
       dto.description || '',
       dueDate,
@@ -53,10 +51,13 @@ export class TaskController {
   @ApiOperation({ summary: 'Cập nhật task (Chỉ dành cho người tạo)' })
   @ApiParam({ name: 'taskId', description: 'ID task' })
   @ApiResponse({ status: 200, description: 'Task được cập nhật thành công' })
-  @ApiResponse({ status: 403, description: 'Chỉ người tạo mới có thể cập nhật' })
+  @ApiResponse({
+    status: 403,
+    description: 'Chỉ người tạo mới có thể cập nhật',
+  })
   @ApiResponse({ status: 404, description: 'Không tìm thấy task' })
   async updateTask(
-    @Request() req,
+    @User() { _id }: JwtPayload,
     @Param('taskId') taskId: string,
     @Body() dto: UpdateTaskDto,
   ) {
@@ -65,7 +66,7 @@ export class TaskController {
       updates.due_date = new Date(dto.due_date);
     }
 
-    return this.taskService.updateTask(taskId, req.user.id, updates);
+    return this.taskService.updateTask(taskId, _id, updates);
   }
 
   @Delete(':taskId')
@@ -75,10 +76,10 @@ export class TaskController {
   @ApiResponse({ status: 403, description: 'Chỉ người tạo mới có thể xóa' })
   @ApiResponse({ status: 404, description: 'Không tìm thấy task' })
   async deleteTask(
-    @Request() req,
+    @User() { _id }: JwtPayload,
     @Param('taskId') taskId: string,
   ) {
-    return this.taskService.deleteTask(taskId, req.user.id);
+    return this.taskService.deleteTask(taskId, _id);
   }
 
   @Get('my-tasks')
@@ -89,13 +90,13 @@ export class TaskController {
   @ApiQuery({ name: 'limit', required: false, type: Number })
   @ApiResponse({ status: 200, description: 'Danh sách task của người dùng' })
   async getUserTasks(
-    @Request() req,
+    @User() { _id }: JwtPayload,
     @Query('status') status?: TaskStatus,
     @Query('priority') priority?: TaskPriority,
     @Query('page') page?: number,
     @Query('limit') limit?: number,
   ) {
-    return this.taskService.getUserTasks(req.user.id, status, priority, page, limit);
+    return this.taskService.getUserTasks(_id, status, priority, page, limit);
   }
 
   @Get('slot/:slotId')
@@ -109,29 +110,29 @@ export class TaskController {
   @Get('overdue')
   @ApiOperation({ summary: 'Lấy danh sách task quá hạn' })
   @ApiResponse({ status: 200, description: 'Danh sách task quá hạn' })
-  async getOverdueTasks(@Request() req) {
-    return this.taskService.getOverdueTasks(req.user.id);
+  async getOverdueTasks(@User() { _id }: JwtPayload) {
+    return this.taskService.getOverdueTasks(_id);
   }
 
   @Get('today')
   @ApiOperation({ summary: 'Lấy danh sách task hôm nay' })
   @ApiResponse({ status: 200, description: 'Danh sách task hôm nay' })
-  async getTodayTasks(@Request() req) {
-    return this.taskService.getTodayTasks(req.user.id);
+  async getTodayTasks(@User() { _id }: JwtPayload) {
+    return this.taskService.getTodayTasks(_id);
   }
 
   @Get('upcoming')
   @ApiOperation({ summary: 'Lấy danh sách task sắp tới (7 ngày tới)' })
   @ApiResponse({ status: 200, description: 'Danh sách task sắp tới' })
-  async getUpcomingTasks(@Request() req) {
-    return this.taskService.getUpcomingTasks(req.user.id);
+  async getUpcomingTasks(@User() { _id }: JwtPayload) {
+    return this.taskService.getUpcomingTasks(_id);
   }
 
   @Get('statistics')
   @ApiOperation({ summary: 'Lấy thống kê task của người dùng' })
   @ApiResponse({ status: 200, description: 'Thống kê task' })
-  async getUserTaskStatistics(@Request() req) {
-    return this.taskService.getUserTaskStatistics(req.user.id);
+  async getUserTaskStatistics(@User() { _id }: JwtPayload) {
+    return this.taskService.getUserTaskStatistics(_id);
   }
 
   @Get(':taskId')
@@ -147,12 +148,15 @@ export class TaskController {
   @ApiOperation({ summary: 'Cập nhật trạng thái task' })
   @ApiParam({ name: 'taskId', description: 'ID task' })
   @ApiResponse({ status: 200, description: 'Đã cập nhật trạng thái task' })
-  @ApiResponse({ status: 403, description: 'Chỉ người tạo mới có thể cập nhật' })
+  @ApiResponse({
+    status: 403,
+    description: 'Chỉ người tạo mới có thể cập nhật',
+  })
   async updateTaskStatus(
-    @Request() req,
+    @User() { _id }: JwtPayload,
     @Param('taskId') taskId: string,
     @Body('status') status: TaskStatus,
   ) {
-    return this.taskService.updateTaskStatus(taskId, req.user.id, status);
+    return this.taskService.updateTaskStatus(taskId, _id, status);
   }
 }

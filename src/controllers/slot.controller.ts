@@ -8,8 +8,9 @@ import {
   Param,
   Query,
   UseGuards,
-  Request,
 } from '@nestjs/common';
+import { User } from '../decorators/user.decorator';
+import type { JwtPayload } from '../types/jwt';
 import {
   ApiTags,
   ApiOperation,
@@ -37,17 +38,23 @@ export class SlotController {
 
   @Post('group')
   @ApiOperation({ summary: 'Tạo một group slot' })
-  @ApiResponse({ status: 201, description: 'Group slot đã được tạo thành công' })
-  @ApiResponse({ status: 400, description: 'Yêu cầu không hợp lệ (thời gian không hợp lệ)' })
+  @ApiResponse({
+    status: 201,
+    description: 'Group slot đã được tạo thành công',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Yêu cầu không hợp lệ (thời gian không hợp lệ)',
+  })
   async createGroupSlot(
-    @Request() req,
+    @User() { _id }: JwtPayload,
     @Body() dto: CreateGroupSlotDto,
   ) {
     const startTime = new Date(dto.start_time);
     const endTime = new Date(dto.end_time);
 
     return this.slotService.createGroupSlot(
-      req.user.id,
+      _id,
       dto.group_id,
       dto.title,
       dto.description || '',
@@ -58,17 +65,23 @@ export class SlotController {
 
   @Post('private')
   @ApiOperation({ summary: 'Tạo một slot riêng tư (1-1)' })
-  @ApiResponse({ status: 201, description: 'Slot riêng tư đã được tạo thành công' })
-  @ApiResponse({ status: 400, description: 'Yêu cầu không hợp lệ (thời gian không hợp lệ)' })
+  @ApiResponse({
+    status: 201,
+    description: 'Slot riêng tư đã được tạo thành công',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Yêu cầu không hợp lệ (thời gian không hợp lệ)',
+  })
   async createPrivateSlot(
-    @Request() req,
+    @User() { _id }: JwtPayload,
     @Body() dto: CreatePrivateSlotDto,
   ) {
     const startTime = new Date(dto.start_time);
     const endTime = new Date(dto.end_time);
 
     return this.slotService.createPrivateSlot(
-      req.user.id,
+      _id,
       dto.friend_id,
       dto.title,
       dto.description || '',
@@ -81,10 +94,13 @@ export class SlotController {
   @ApiOperation({ summary: 'Cập nhật slot (Chỉ dành cho người tạo)' })
   @ApiParam({ name: 'slotId', description: 'ID slot' })
   @ApiResponse({ status: 200, description: 'Slot đã được cập nhật thành công' })
-  @ApiResponse({ status: 403, description: 'Chỉ người tạo mới có thể cập nhật' })
+  @ApiResponse({
+    status: 403,
+    description: 'Chỉ người tạo mới có thể cập nhật',
+  })
   @ApiResponse({ status: 404, description: 'Không tìm thấy slot' })
   async updateSlot(
-    @Request() req,
+    @User() { _id }: JwtPayload,
     @Param('slotId') slotId: string,
     @Body() dto: UpdateSlotDto,
   ) {
@@ -92,7 +108,7 @@ export class SlotController {
     if (dto.start_time) updates.start_time = new Date(dto.start_time);
     if (dto.end_time) updates.end_time = new Date(dto.end_time);
 
-    return this.slotService.updateSlot(slotId, req.user.id, updates);
+    return this.slotService.updateSlot(slotId, _id, updates);
   }
 
   @Delete(':slotId')
@@ -102,28 +118,31 @@ export class SlotController {
   @ApiResponse({ status: 403, description: 'Chỉ người tạo mới có thể xóa' })
   @ApiResponse({ status: 404, description: 'Không tìm thấy slot' })
   async deleteSlot(
-    @Request() req,
+    @User() { _id }: JwtPayload,
     @Param('slotId') slotId: string,
   ) {
-    return this.slotService.deleteSlot(slotId, req.user.id);
+    return this.slotService.deleteSlot(slotId, _id);
   }
 
   @Get('my-slots')
-  @ApiOperation({ summary: 'Lấy danh sách slot của người dùng hiện tại (đã tạo hoặc tham gia)' })
+  @ApiOperation({
+    summary:
+      'Lấy danh sách slot của người dùng hiện tại (đã tạo hoặc tham gia)',
+  })
   @ApiQuery({ name: 'slot_type', required: false, enum: SlotType })
   @ApiResponse({ status: 200, description: 'Danh sách các slot' })
   async getUserSlots(
-    @Request() req,
+    @User() { _id }: JwtPayload,
     @Query('slot_type') slotType?: SlotType,
   ) {
-    return this.slotService.getUserSlots(req.user.id, slotType);
+    return this.slotService.getUserSlots(_id, slotType);
   }
 
   @Get('upcoming')
   @ApiOperation({ summary: 'Lấy slot sắp tới (7 ngày tới)' })
   @ApiResponse({ status: 200, description: 'Danh sách các slot sắp tới' })
-  async getUpcomingSlots(@Request() req) {
-    return this.slotService.getUpcomingSlots(req.user.id);
+  async getUpcomingSlots(@User() { _id }: JwtPayload) {
+    return this.slotService.getUpcomingSlots(_id);
   }
 
   @Get('group/:groupId')

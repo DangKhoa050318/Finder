@@ -8,8 +8,9 @@ import {
   Param,
   Query,
   UseGuards,
-  Request,
 } from '@nestjs/common';
+import { User } from '../decorators/user.decorator';
+import type { JwtPayload } from '../types/jwt';
 import {
   ApiTags,
   ApiOperation,
@@ -37,11 +38,8 @@ export class NewsController {
   @ApiOperation({ summary: 'Tạo tin tức (Chỉ dành cho admin)' })
   @ApiResponse({ status: 201, description: 'Tin tức đã được tạo thành công' })
   @ApiResponse({ status: 403, description: 'Không có quyền truy cập' })
-  async createNews(
-    @Request() req,
-    @Body() dto: CreateNewsDto,
-  ) {
-    return this.newsService.createNews(req.user.id, dto.title, dto.content);
+  async createNews(@User() { _id }: JwtPayload, @Body() dto: CreateNewsDto) {
+    return this.newsService.createNews(_id, dto.title, dto.content);
   }
 
   @Put(':newsId')
@@ -50,7 +48,10 @@ export class NewsController {
   @Roles(Role.Admin)
   @ApiOperation({ summary: 'Cập nhật tin tức (Chỉ dành cho admin)' })
   @ApiParam({ name: 'newsId', description: 'ID tin tức' })
-  @ApiResponse({ status: 200, description: 'Tin tức đã được cập nhật thành công' })
+  @ApiResponse({
+    status: 200,
+    description: 'Tin tức đã được cập nhật thành công',
+  })
   @ApiResponse({ status: 404, description: 'Không tìm thấy tin tức' })
   async updateNews(
     @Param('newsId') newsId: string,
