@@ -29,10 +29,11 @@ export class AttendanceController {
   constructor(private readonly attendanceService: AttendanceService) {}
 
   @Post('register/:slotId')
-  @ApiOperation({ summary: 'Đăng ký một slot' })
-  @ApiParam({ name: 'slotId', description: 'ID slot' })
-  @ApiResponse({ status: 201, description: 'Đăng ký thành công' })
-  @ApiResponse({ status: 400, description: 'Đã đăng ký' })
+  @ApiOperation({ summary: 'Đăng ký tham gia slot' })
+  @ApiParam({ name: 'slotId', description: 'ID của slot' })
+  @ApiResponse({ status: 201, description: 'Đã đăng ký slot thành công' })
+  @ApiResponse({ status: 400, description: 'Đã đăng ký slot này trước đó' })
+  @ApiResponse({ status: 404, description: 'Không tìm thấy slot' })
   async registerForSlot(
     @User() { _id }: JwtPayload,
     @Param('slotId') slotId: string,
@@ -41,10 +42,14 @@ export class AttendanceController {
   }
 
   @Post('start/:slotId')
-  @ApiOperation({ summary: 'Đánh dấu tham gia - bắt đầu tham gia' })
-  @ApiParam({ name: 'slotId', description: 'ID slot' })
-  @ApiResponse({ status: 200, description: 'Bắt đầu tham gia' })
-  @ApiResponse({ status: 404, description: 'Chưa đăng ký' })
+  @ApiOperation({ summary: 'Bắt đầu tham gia slot' })
+  @ApiParam({ name: 'slotId', description: 'ID của slot' })
+  @ApiResponse({ status: 200, description: 'Đã bắt đầu tham gia slot' })
+  @ApiResponse({ status: 404, description: 'Chưa đăng ký slot này' })
+  @ApiResponse({
+    status: 400,
+    description: 'Không thể bắt đầu tham gia slot này',
+  })
   async startAttending(
     @User() { _id }: JwtPayload,
     @Param('slotId') slotId: string,

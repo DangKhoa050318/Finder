@@ -33,7 +33,7 @@ export class MajorService {
   async getById(id: string) {
     const major = await this.majorModel.findById(id).exec();
     if (!major) {
-      throw new Error('Major not found');
+      throw new Error('Không tìm thấy ngành học');
     }
     return major;
   }
@@ -41,7 +41,7 @@ export class MajorService {
   async getByKey(key: string) {
     const major = await this.majorModel.findOne({ key }).exec();
     if (!major) {
-      throw new Error('Major not found');
+      throw new Error('Không tìm thấy ngành học');
     }
     return major;
   }
@@ -49,7 +49,7 @@ export class MajorService {
   async create(key: string, name: string) {
     const existed = await this.majorModel.findOne({ key }).exec();
     if (existed) {
-      throw new Error('Major with this key already exists');
+      throw new Error('Mã ngành đã tồn tại');
     }
     const major = new this.majorModel({ key, name });
     return major.save();
@@ -58,7 +58,7 @@ export class MajorService {
   async update(id: string, name: string) {
     const major = await this.majorModel.findById(id).exec();
     if (!major) {
-      throw new Error('Major not found');
+      throw new Error('Không tìm thấy ngành học');
     }
     major.name = name;
     return major.save();
@@ -67,9 +67,9 @@ export class MajorService {
   async delete(id: string) {
     const major = await this.majorModel.findById(id).exec();
     if (!major) {
-      throw new Error('Major not found');
+      throw new Error('Không tìm thấy ngành học');
     }
     await this.majorModel.findByIdAndDelete(id).exec();
-    return { message: 'Major deleted successfully' };
+    return { message: 'Đã xóa ngành học thành công' };
   }
 }

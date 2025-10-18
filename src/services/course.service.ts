@@ -119,7 +119,7 @@ export class CourseService {
   async getById(id: string) {
     const course = await this.courseModel.findById(id).exec();
     if (!course) {
-      throw new Error('Course not found');
+      throw new Error('Không tìm thấy môn học');
     }
     return course;
   }
@@ -127,7 +127,7 @@ export class CourseService {
   async getByCourseId(course_id: string) {
     const course = await this.courseModel.findOne({ course_id }).exec();
     if (!course) {
-      throw new Error('Course not found');
+      throw new Error('Không tìm thấy môn học');
     }
     return course;
   }
@@ -135,7 +135,7 @@ export class CourseService {
   async create(course_id: string, course_name: string) {
     const existed = await this.courseModel.findOne({ course_id }).exec();
     if (existed) {
-      throw new Error('Course with this ID already exists');
+      throw new Error('Mã môn học đã tồn tại');
     }
     const course = new this.courseModel({ course_id, course_name });
     return course.save();
@@ -144,7 +144,7 @@ export class CourseService {
   async update(id: string, course_name: string) {
     const course = await this.courseModel.findById(id).exec();
     if (!course) {
-      throw new Error('Course not found');
+      throw new Error('Không tìm thấy môn học');
     }
     course.course_name = course_name;
     return course.save();
@@ -153,9 +153,9 @@ export class CourseService {
   async delete(id: string) {
     const course = await this.courseModel.findById(id).exec();
     if (!course) {
-      throw new Error('Course not found');
+      throw new Error('Không tìm thấy môn học');
     }
     await this.courseModel.findByIdAndDelete(id).exec();
-    return { message: 'Course deleted successfully' };
+    return { message: 'Đã xóa môn học thành công' };
   }
 }

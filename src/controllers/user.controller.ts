@@ -46,6 +46,12 @@ export class UserController {
 
   // Support legacy endpoint for direct user ID access
   @Get(':id')
+  @ApiOperation({ summary: 'Lấy thông tin user theo ID' })
+  @ApiResponse({
+    status: 200,
+    type: UserResponseDto,
+  })
+  @ApiResponse({ status: 400, description: 'Người dùng không tồn tại' })
   async getById(@Param('id') id: string): Promise<UserResponseDto> {
     const user = await this.userService.findById(id);
     if (!user) {
@@ -75,6 +81,12 @@ export class UserController {
 
   // Support legacy endpoint for direct user ID update
   @Patch(':id')
+  @ApiOperation({ summary: 'Cập nhật thông tin user theo ID' })
+  @ApiResponse({
+    status: 200,
+    type: UserResponseDto,
+  })
+  @ApiResponse({ status: 400, description: 'Người dùng không tồn tại' })
   async updateById(
     @Param('id') id: string,
     @Body() updateUserDto: UpdateUserDto,
@@ -127,6 +139,11 @@ export class UserController {
 
   @Patch('me/password')
   @ApiOperation({ summary: 'Đổi mật khẩu' })
+  @ApiResponse({ status: 200, description: 'Đổi mật khẩu thành công' })
+  @ApiResponse({
+    status: 400,
+    description: 'Mật khẩu hiện tại không đúng hoặc người dùng không tồn tại',
+  })
   async changePassword(
     @User() { _id }: JwtPayload,
     @Body() changePasswordDto: ChangePasswordDto,
