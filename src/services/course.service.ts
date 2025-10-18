@@ -111,4 +111,51 @@ export class CourseService {
       }
     }
   }
+
+  async getAll() {
+    return this.courseModel.find().exec();
+  }
+
+  async getById(id: string) {
+    const course = await this.courseModel.findById(id).exec();
+    if (!course) {
+      throw new Error('Course not found');
+    }
+    return course;
+  }
+
+  async getByCourseId(course_id: string) {
+    const course = await this.courseModel.findOne({ course_id }).exec();
+    if (!course) {
+      throw new Error('Course not found');
+    }
+    return course;
+  }
+
+  async create(course_id: string, course_name: string) {
+    const existed = await this.courseModel.findOne({ course_id }).exec();
+    if (existed) {
+      throw new Error('Course with this ID already exists');
+    }
+    const course = new this.courseModel({ course_id, course_name });
+    return course.save();
+  }
+
+  async update(id: string, course_name: string) {
+    const course = await this.courseModel.findById(id).exec();
+    if (!course) {
+      throw new Error('Course not found');
+    }
+    course.course_name = course_name;
+    return course.save();
+  }
+
+  async delete(id: string) {
+    const course = await this.courseModel.findById(id).exec();
+    if (!course) {
+      throw new Error('Course not found');
+    }
+    await this.courseModel.findByIdAndDelete(id).exec();
+    return { message: 'Course deleted successfully' };
+  }
 }

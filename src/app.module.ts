@@ -4,6 +4,8 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { AuthController } from './controllers/auth.controller';
 import { MajorController } from './controllers/major.controller';
+import { CourseController } from './controllers/course.controller';
+import { MajorCourseController } from './controllers/major_course.controller';
 import { UserController } from './controllers/user.controller';
 import { AllExceptionFilter } from './exceptions/all.exception';
 import { HttpExceptionFilter } from './exceptions/http.exception';
@@ -18,6 +20,7 @@ import { UserSchemaModule } from './models/user.schema';
 import { AuthService } from './services/auth.service';
 import { CourseService } from './services/course.service';
 import { MajorService } from './services/major.service';
+import { MajorCourseService } from './services/major_course.service';
 import { UserService } from './services/user.service';
 import { ConfigService } from './shared/config.service';
 import { GlobalModule } from './shared/global.module';
@@ -36,7 +39,10 @@ import { AttendanceController } from './controllers/attendance.controller';
 import { TaskController } from './controllers/task.controller';
 import { ReminderController } from './controllers/reminder.controller';
 // New schemas
-import { FriendRequest, FriendRequestSchema } from './models/friend-request.schema';
+import {
+  FriendRequest,
+  FriendRequestSchema,
+} from './models/friend-request.schema';
 import { Friendship, FriendshipSchema } from './models/friendship.schema';
 import { Report, ReportSchema } from './models/report.schema';
 import { Block, BlockSchema } from './models/block.schema';
@@ -45,7 +51,10 @@ import { Ban, BanSchema } from './models/ban.schema';
 import { Group, GroupSchema } from './models/group.schema';
 import { GroupMember, GroupMemberSchema } from './models/group-member.schema';
 import { Chat, ChatSchema } from './models/chat.schema';
-import { ChatParticipant, ChatParticipantSchema } from './models/chat-participant.schema';
+import {
+  ChatParticipant,
+  ChatParticipantSchema,
+} from './models/chat-participant.schema';
 import { Message, MessageSchema } from './models/message.schema';
 import { Slot, SlotSchema } from './models/slot.schema';
 import { SlotGroup, SlotGroupSchema } from './models/slot-group.schema';
@@ -108,6 +117,8 @@ import { ReminderService } from './services/reminder.service';
     AuthController,
     UserController,
     MajorController,
+    CourseController,
+    MajorCourseController,
     AvailabilityController,
     FriendController,
     ReportController,
@@ -148,6 +159,7 @@ import { ReminderService } from './services/reminder.service';
     UserService,
     MajorService,
     CourseService,
+    MajorCourseService,
     AuthService,
     AvailabilityService,
     FriendService,

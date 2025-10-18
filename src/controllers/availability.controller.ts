@@ -1,36 +1,89 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Logger } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+  ApiParam,
+} from '@nestjs/swagger';
 import { AvailabilityService } from '../services/availability.service';
+import {
+  CreateAvailabilityDto,
+  UpdateAvailabilityDto,
+} from '../dtos/availability.dto';
+import { JwtAuthGuard } from '../guards/jwt-auth.guard';
+import { User } from '../decorators/user.decorator';
+import type { JwtPayload } from '../types/jwt';
+import { Public } from '../decorators/public.decorator';
 
+@ApiTags('Availability')
 @Controller('availability')
 export class AvailabilityController {
-  private readonly logger = new Logger(AvailabilityController.name);
   constructor(private readonly availabilityService: AvailabilityService) {}
 
   @Post()
-  create(@Body() body: { user_id: string; day_of_week: number; start_time: string; end_time: string }) {
-    this.logger.debug(`POST /availability body=${JSON.stringify(body)}`);
-    return this.availabilityService.create(body);
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Tạo khung giờ rảnh' })
+  @ApiResponse({
+    status: 201,
+    description: 'Khung giờ rảnh đã được tạo thành công',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Thời gian không hợp lệ hoặc bị chồng lấp',
+  })
+  create(@Body() dto: CreateAvailabilityDto) {
+    return this.availabilityService.create(dto);
   }
 
+  @Public()
   @Get('user/:userId')
+  @ApiOperation({ summary: 'Lấy danh sách khung giờ rảnh theo người dùng' })
+  @ApiParam({ name: 'userId', description: 'ID người dùng' })
+  @ApiResponse({ status: 200, description: 'Danh sách khung giờ rảnh' })
   listByUser(@Param('userId') userId: string) {
-    this.logger.debug(`GET /availability/user/${userId}`);
     return this.availabilityService.listByUser(userId);
   }
 
   @Patch(':id')
-  update(
-    @Param('id') id: string,
-    @Body()
-    body: Partial<{ day_of_week: number; start_time: string; end_time: string }>,
-  ) {
-    this.logger.debug(`PATCH /availability/${id} body=${JSON.stringify(body)}`);
-    return this.availabilityService.update(id, body);
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Cập nhật khung giờ rảnh' })
+  @ApiParam({ name: 'id', description: 'ID khung giờ rảnh' })
+  @ApiResponse({
+    status: 200,
+    description: 'Khung giờ rảnh đã được cập nhật thành công',
+  })
+  @ApiResponse({ status: 404, description: 'Không tìm thấy khung giờ rảnh' })
+  @ApiResponse({
+    status: 400,
+    description: 'Thời gian không hợp lệ hoặc bị chồng lấp',
+  })
+  update(@Param('id') id: string, @Body() dto: UpdateAvailabilityDto) {
+    return this.availabilityService.update(id, dto);
   }
 
   @Delete(':id')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Xóa khung giờ rảnh' })
+  @ApiParam({ name: 'id', description: 'ID khung giờ rảnh' })
+  @ApiResponse({
+    status: 200,
+    description: 'Khung giờ rảnh đã được xóa thành công',
+  })
+  @ApiResponse({ status: 404, description: 'Không tìm thấy khung giờ rảnh' })
   remove(@Param('id') id: string) {
-    this.logger.debug(`DELETE /availability/${id}`);
     return this.availabilityService.remove(id);
   }
 }

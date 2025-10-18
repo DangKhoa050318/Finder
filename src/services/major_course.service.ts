@@ -178,4 +178,87 @@ export class MajorCourseService {
       }
     }
   }
+
+  async getAll() {
+    return this.majorCourseModel
+      .find()
+      .populate('major_id')
+      .populate('course_id')
+      .exec();
+  }
+
+  async getById(id: string) {
+    const majorCourse = await this.majorCourseModel
+      .findById(id)
+      .populate('major_id')
+      .populate('course_id')
+      .exec();
+    if (!majorCourse) {
+      throw new Error('Major-Course relationship not found');
+    }
+    return majorCourse;
+  }
+
+  async getCoursesByMajor(major_id: string) {
+    const majorCourses = await this.majorCourseModel
+      .find({ major_id })
+      .populate('course_id')
+      .exec();
+    return majorCourses.map((mc) => mc.course_id);
+  }
+
+  async getMajorsByCourse(course_id: string) {
+    const majorCourses = await this.majorCourseModel
+      .find({ course_id })
+      .populate('major_id')
+      .exec();
+    return majorCourses.map((mc) => mc.major_id);
+  }
+
+  async create(major_id: string, course_id: string) {
+    // Check if major exists
+    const major = await this.majorModel.findById(major_id).exec();
+    if (!major) {
+      throw new Error('Major not found');
+    }
+
+    // Check if course exists
+    const course = await this.courseModel.findById(course_id).exec();
+    if (!course) {
+      throw new Error('Course not found');
+    }
+
+    // Check if relationship already exists
+    const existed = await this.majorCourseModel
+      .findOne({ major_id, course_id })
+      .exec();
+    if (existed) {
+      throw new Error('Major-Course relationship already exists');
+    }
+
+    const majorCourse = new this.majorCourseModel({ major_id, course_id });
+    return majorCourse.save();
+  }
+
+  async delete(id: string) {
+    const majorCourse = await this.majorCourseModel.findById(id).exec();
+    if (!majorCourse) {
+      throw new Error('Major-Course relationship not found');
+    }
+    await this.majorCourseModel.findByIdAndDelete(id).exec();
+    return { message: 'Major-Course relationship deleted successfully' };
+  }
+
+  async deleteByCourseAndMajor(major_id: string, course_id: string) {
+    const majorCourse = await this.majorCourseModel
+      .findOne({ major_id, course_id })
+      .exec();
+    if (!majorCourse) {
+      throw new Error('Major-Course relationship not found');
+    }
+    await this.majorCourseModel
+      .findOneAndDelete({ major_id, course_id })
+      .exec();
+    return { message: 'Major-Course relationship deleted successfully' };
+  }
 }
