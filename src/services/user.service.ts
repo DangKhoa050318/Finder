@@ -1,4 +1,8 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import * as bcrypt from 'bcryptjs';
 import { Model } from 'mongoose';
@@ -57,7 +61,7 @@ export class UserService {
 
   async changePassword(userId: string, newPassword: string) {
     const user = await this.findById(userId);
-    if (!user) throw new Error('User not found');
+    if (!user) throw new NotFoundException('Người dùng không tồn tại');
 
     user.password = newPassword;
     return user.save();

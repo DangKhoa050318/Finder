@@ -98,8 +98,12 @@ export class MajorCourseController {
     type: MajorCourseResponseDto,
   })
   @ApiResponse({
-    status: 400,
-    description: 'Mối quan hệ đã tồn tại hoặc dữ liệu không hợp lệ',
+    status: 404,
+    description: 'Không tìm thấy ngành học hoặc môn học',
+  })
+  @ApiResponse({
+    status: 409,
+    description: 'Mối quan hệ đã tồn tại',
   })
   @ApiResponse({ status: 403, description: 'Không có quyền truy cập' })
   async create(@Body() dto: CreateMajorCourseDto) {

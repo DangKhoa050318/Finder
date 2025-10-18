@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Injectable,
   UnauthorizedException,
+  ConflictException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
@@ -46,7 +47,7 @@ export class AuthService {
 
   async register(data: RegisterDto) {
     const existed = await this.userService.findByEmail(data.email);
-    if (existed) throw new BadRequestException('Email đã tồn tại');
+    if (existed) throw new ConflictException('Email đã tồn tại');
     await this.userService.create(data);
     return {
       message: 'Đăng ký thành công',

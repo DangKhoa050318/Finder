@@ -1,4 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import {
@@ -194,7 +198,7 @@ export class MajorCourseService {
       .populate('course_id')
       .exec();
     if (!majorCourse) {
-      throw new Error('Major-Course relationship not found');
+      throw new NotFoundException('Không tìm thấy mối quan hệ ngành-môn học');
     }
     return majorCourse;
   }
@@ -219,13 +223,13 @@ export class MajorCourseService {
     // Check if major exists
     const major = await this.majorModel.findById(major_id).exec();
     if (!major) {
-      throw new Error('Không tìm thấy ngành học');
+      throw new NotFoundException('Không tìm thấy ngành học');
     }
 
     // Check if course exists
     const course = await this.courseModel.findById(course_id).exec();
     if (!course) {
-      throw new Error('Không tìm thấy môn học');
+      throw new NotFoundException('Không tìm thấy môn học');
     }
 
     // Check if relationship already exists
@@ -233,7 +237,7 @@ export class MajorCourseService {
       .findOne({ major_id, course_id })
       .exec();
     if (existed) {
-      throw new Error('Mối quan hệ ngành-môn học đã tồn tại');
+      throw new ConflictException('Mối quan hệ ngành-môn học đã tồn tại');
     }
 
     const majorCourse = new this.majorCourseModel({ major_id, course_id });
@@ -243,7 +247,7 @@ export class MajorCourseService {
   async delete(id: string) {
     const majorCourse = await this.majorCourseModel.findById(id).exec();
     if (!majorCourse) {
-      throw new Error('Không tìm thấy mối quan hệ ngành-môn học');
+      throw new NotFoundException('Không tìm thấy mối quan hệ ngành-môn học');
     }
     await this.majorCourseModel.findByIdAndDelete(id).exec();
     return { message: 'Đã xóa mối quan hệ ngành-môn học thành công' };
@@ -254,7 +258,7 @@ export class MajorCourseService {
       .findOne({ major_id, course_id })
       .exec();
     if (!majorCourse) {
-      throw new Error('Không tìm thấy mối quan hệ ngành-môn học');
+      throw new NotFoundException('Không tìm thấy mối quan hệ ngành-môn học');
     }
     await this.majorCourseModel
       .findOneAndDelete({ major_id, course_id })

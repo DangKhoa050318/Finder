@@ -6,6 +6,7 @@ import {
   Patch,
   Request,
   Param,
+  NotFoundException,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -36,10 +37,11 @@ export class UserController {
   @ApiResponse({
     type: UserResponseDto,
   })
+  @ApiResponse({ status: 404, description: 'Người dùng không tồn tại' })
   async getMe(@User() { _id }: JwtPayload): Promise<UserResponseDto> {
     const user = await this.userService.findById(_id);
     if (!user) {
-      throw new BadRequestException('Người dùng không tồn tại');
+      throw new NotFoundException('Người dùng không tồn tại');
     }
     return toDto(user, UserResponseDto);
   }
@@ -51,11 +53,11 @@ export class UserController {
     status: 200,
     type: UserResponseDto,
   })
-  @ApiResponse({ status: 400, description: 'Người dùng không tồn tại' })
+  @ApiResponse({ status: 404, description: 'Người dùng không tồn tại' })
   async getById(@Param('id') id: string): Promise<UserResponseDto> {
     const user = await this.userService.findById(id);
     if (!user) {
-      throw new BadRequestException('Người dùng không tồn tại');
+      throw new NotFoundException('Người dùng không tồn tại');
     }
     return toDto(user, UserResponseDto);
   }
@@ -65,6 +67,7 @@ export class UserController {
   @ApiResponse({
     type: UserResponseDto,
   })
+  @ApiResponse({ status: 404, description: 'Người dùng không tồn tại' })
   async updateMe(
     @User() { _id }: JwtPayload,
     @Body() updateUserDto: UpdateUserDto,
@@ -73,7 +76,7 @@ export class UserController {
     const user = await this.userService.updateUser(_id, updateData);
 
     if (!user) {
-      throw new BadRequestException('Người dùng không tồn tại');
+      throw new NotFoundException('Người dùng không tồn tại');
     }
 
     return toDto(user, UserResponseDto);
@@ -86,7 +89,7 @@ export class UserController {
     status: 200,
     type: UserResponseDto,
   })
-  @ApiResponse({ status: 400, description: 'Người dùng không tồn tại' })
+  @ApiResponse({ status: 404, description: 'Người dùng không tồn tại' })
   async updateById(
     @Param('id') id: string,
     @Body() updateUserDto: UpdateUserDto,
@@ -95,7 +98,7 @@ export class UserController {
     const user = await this.userService.updateUser(id, updateData);
 
     if (!user) {
-      throw new BadRequestException('Người dùng không tồn tại');
+      throw new NotFoundException('Người dùng không tồn tại');
     }
 
     return toDto(user, UserResponseDto);
@@ -142,7 +145,11 @@ export class UserController {
   @ApiResponse({ status: 200, description: 'Đổi mật khẩu thành công' })
   @ApiResponse({
     status: 400,
-    description: 'Mật khẩu hiện tại không đúng hoặc người dùng không tồn tại',
+    description: 'Mật khẩu hiện tại không đúng',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Người dùng không tồn tại',
   })
   async changePassword(
     @User() { _id }: JwtPayload,
@@ -151,7 +158,7 @@ export class UserController {
     const user = await this.userService.findById(_id);
 
     if (!user) {
-      throw new BadRequestException('Người dùng không tồn tại');
+      throw new NotFoundException('Người dùng không tồn tại');
     }
 
     // Kiểm tra mật khẩu hiện tại

@@ -69,7 +69,7 @@ export class CourseController {
     description: 'Môn học đã được tạo thành công',
     type: CourseResponseDto,
   })
-  @ApiResponse({ status: 400, description: 'Mã môn học đã tồn tại' })
+  @ApiResponse({ status: 409, description: 'Mã môn học đã tồn tại' })
   @ApiResponse({ status: 403, description: 'Không có quyền truy cập' })
   async createCourse(@Body() dto: CreateCourseDto) {
     return this.courseService.create(dto.course_id, dto.course_name);

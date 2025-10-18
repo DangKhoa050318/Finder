@@ -1,4 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Major, MajorDocument } from '../models/major.schema';
@@ -33,7 +37,7 @@ export class MajorService {
   async getById(id: string) {
     const major = await this.majorModel.findById(id).exec();
     if (!major) {
-      throw new Error('Không tìm thấy ngành học');
+      throw new NotFoundException('Không tìm thấy ngành học');
     }
     return major;
   }
@@ -41,7 +45,7 @@ export class MajorService {
   async getByKey(key: string) {
     const major = await this.majorModel.findOne({ key }).exec();
     if (!major) {
-      throw new Error('Không tìm thấy ngành học');
+      throw new NotFoundException('Không tìm thấy ngành học');
     }
     return major;
   }
@@ -49,7 +53,7 @@ export class MajorService {
   async create(key: string, name: string) {
     const existed = await this.majorModel.findOne({ key }).exec();
     if (existed) {
-      throw new Error('Mã ngành đã tồn tại');
+      throw new ConflictException('Mã ngành đã tồn tại');
     }
     const major = new this.majorModel({ key, name });
     return major.save();
@@ -58,7 +62,7 @@ export class MajorService {
   async update(id: string, name: string) {
     const major = await this.majorModel.findById(id).exec();
     if (!major) {
-      throw new Error('Không tìm thấy ngành học');
+      throw new NotFoundException('Không tìm thấy ngành học');
     }
     major.name = name;
     return major.save();
@@ -67,7 +71,7 @@ export class MajorService {
   async delete(id: string) {
     const major = await this.majorModel.findById(id).exec();
     if (!major) {
-      throw new Error('Không tìm thấy ngành học');
+      throw new NotFoundException('Không tìm thấy ngành học');
     }
     await this.majorModel.findByIdAndDelete(id).exec();
     return { message: 'Đã xóa ngành học thành công' };

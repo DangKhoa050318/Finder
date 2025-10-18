@@ -1,4 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Course, CourseDocument } from '../models/course.schema';
@@ -119,7 +123,7 @@ export class CourseService {
   async getById(id: string) {
     const course = await this.courseModel.findById(id).exec();
     if (!course) {
-      throw new Error('Không tìm thấy môn học');
+      throw new NotFoundException('Không tìm thấy môn học');
     }
     return course;
   }
@@ -127,7 +131,7 @@ export class CourseService {
   async getByCourseId(course_id: string) {
     const course = await this.courseModel.findOne({ course_id }).exec();
     if (!course) {
-      throw new Error('Không tìm thấy môn học');
+      throw new NotFoundException('Không tìm thấy môn học');
     }
     return course;
   }
@@ -135,7 +139,7 @@ export class CourseService {
   async create(course_id: string, course_name: string) {
     const existed = await this.courseModel.findOne({ course_id }).exec();
     if (existed) {
-      throw new Error('Mã môn học đã tồn tại');
+      throw new ConflictException('Mã môn học đã tồn tại');
     }
     const course = new this.courseModel({ course_id, course_name });
     return course.save();
@@ -144,7 +148,7 @@ export class CourseService {
   async update(id: string, course_name: string) {
     const course = await this.courseModel.findById(id).exec();
     if (!course) {
-      throw new Error('Không tìm thấy môn học');
+      throw new NotFoundException('Không tìm thấy môn học');
     }
     course.course_name = course_name;
     return course.save();
@@ -153,7 +157,7 @@ export class CourseService {
   async delete(id: string) {
     const course = await this.courseModel.findById(id).exec();
     if (!course) {
-      throw new Error('Không tìm thấy môn học');
+      throw new NotFoundException('Không tìm thấy môn học');
     }
     await this.courseModel.findByIdAndDelete(id).exec();
     return { message: 'Đã xóa môn học thành công' };

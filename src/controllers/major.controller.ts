@@ -69,7 +69,7 @@ export class MajorController {
     description: 'Ngành đã được tạo thành công',
     type: MajorResponseDto,
   })
-  @ApiResponse({ status: 400, description: 'Mã ngành đã tồn tại' })
+  @ApiResponse({ status: 409, description: 'Mã ngành đã tồn tại' })
   @ApiResponse({ status: 403, description: 'Không có quyền truy cập' })
   async createMajor(@Body() dto: CreateMajorDto) {
     return this.majorService.create(dto.key, dto.name);
@@ -89,9 +89,6 @@ export class MajorController {
   @ApiResponse({ status: 404, description: 'Không tìm thấy ngành' })
   @ApiResponse({ status: 403, description: 'Không có quyền truy cập' })
   async updateMajor(@Param('id') id: string, @Body() dto: UpdateMajorDto) {
-    if (!dto.name) {
-      throw new Error('Name is required');
-    }
     return this.majorService.update(id, dto.name);
   }
 
