@@ -12,9 +12,6 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.enableCors();
 
-  const userService = app.get(UserService);
-  await userService.createAdminIfNotExists(); // Gọi hàm tạo admin
-
   const majorService = app.get(MajorService);
   await majorService.createDefaultMajors(); // Gọi hàm tạo majors
 

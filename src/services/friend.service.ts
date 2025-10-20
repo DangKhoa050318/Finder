@@ -2,6 +2,8 @@ import {
   Injectable,
   BadRequestException,
   NotFoundException,
+  Inject,
+  forwardRef,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
@@ -11,6 +13,12 @@ import {
   FriendRequestStatus,
 } from '../models/friend-request.schema';
 import { Friendship, FriendshipDocument } from '../models/friendship.schema';
+import { User, UserDocument } from '../models/user.schema';
+import {
+  Availability,
+  AvailabilityDocument,
+} from '../models/availability.schema';
+import { Block, BlockDocument } from '../models/block.schema';
 
 @Injectable()
 export class FriendService {
@@ -19,6 +27,12 @@ export class FriendService {
     private friendRequestModel: Model<FriendRequestDocument>,
     @InjectModel(Friendship.name)
     private friendshipModel: Model<FriendshipDocument>,
+    @InjectModel(User.name)
+    private userModel: Model<UserDocument>,
+    @InjectModel(Availability.name)
+    private availabilityModel: Model<AvailabilityDocument>,
+    @InjectModel(Block.name)
+    private blockModel: Model<BlockDocument>,
   ) {}
 
   // Send friend request
@@ -38,14 +52,20 @@ export class FriendService {
     // Check if request already exists
     const existingRequest = await this.friendRequestModel.findOne({
       $or: [
-        { requester_id: requesterId, requestee_id: requesteeId },
-        { requester_id: requesteeId, requestee_id: requesterId },
+        {
+          requester_id: new Types.ObjectId(requesterId),
+          requestee_id: new Types.ObjectId(requesteeId),
+        },
+        {
+          requester_id: new Types.ObjectId(requesteeId),
+          requestee_id: new Types.ObjectId(requesterId),
+        },
       ],
       status: FriendRequestStatus.Pending,
     });
 
     if (existingRequest) {
-      throw new BadRequestException('Lời mời kết bạn đã tồn tại');
+      throw new BadRequestException('Đã gửi lời mời kết bạn rồi');
     }
 
     const friendRequest = new this.friendRequestModel({
@@ -138,7 +158,7 @@ export class FriendService {
   async getPendingRequests(userId: string) {
     return this.friendRequestModel
       .find({
-        requestee_id: userId,
+        requestee_id: new Types.ObjectId(userId),
         status: FriendRequestStatus.Pending,
       })
       .populate('requester_id', 'full_name email avatar')
@@ -149,7 +169,7 @@ export class FriendService {
   async getSentRequests(userId: string) {
     return this.friendRequestModel
       .find({
-        requester_id: userId,
+        requester_id: new Types.ObjectId(userId),
         status: FriendRequestStatus.Pending,
       })
       .populate('requestee_id', 'full_name email avatar')
@@ -160,7 +180,10 @@ export class FriendService {
   async getFriends(userId: string) {
     const friendships = await this.friendshipModel
       .find({
-        $or: [{ user1_id: userId }, { user2_id: userId }],
+        $or: [
+          { user1_id: new Types.ObjectId(userId) },
+          { user2_id: new Types.ObjectId(userId) },
+        ],
       })
       .populate('user1_id', 'full_name email avatar')
       .populate('user2_id', 'full_name email avatar');
@@ -184,8 +207,8 @@ export class FriendService {
       userId < friendId ? [userId, friendId] : [friendId, userId];
 
     const friendship = await this.friendshipModel.findOneAndDelete({
-      user1_id: smaller,
-      user2_id: larger,
+      user1_id: new Types.ObjectId(smaller),
+      user2_id: new Types.ObjectId(larger),
     });
 
     if (!friendship) {
@@ -201,11 +224,171 @@ export class FriendService {
       userId1 < userId2 ? [userId1, userId2] : [userId2, userId1];
 
     const friendship = await this.friendshipModel.findOne({
-      user1_id: smaller,
-      user2_id: larger,
+      user1_id: new Types.ObjectId(smaller),
+      user2_id: new Types.ObjectId(larger),
     });
 
     return !!friendship;
+  }
+
+  // Get suggested friends based on major, availability, and other criteria
+  async getSuggestedFriends(userId: string, limit: number = 10) {
+    // Get current user info
+    const currentUser = await this.userModel.findById(userId);
+    if (!currentUser) {
+      throw new NotFoundException('Người dùng không tồn tại');
+    }
+
+    // Get current user's availabilities
+    const userAvailabilities = await this.availabilityModel.find({
+      user_id: new Types.ObjectId(userId),
+    });
+
+    // Get list of users to exclude:
+    // 1. Current user
+    const excludeIds = [new Types.ObjectId(userId)];
+
+    // 2. Already friends
+    const friendships = await this.friendshipModel.find({
+      $or: [
+        { user1_id: new Types.ObjectId(userId) },
+        { user2_id: new Types.ObjectId(userId) },
+      ],
+    });
+
+    friendships.forEach((f) => {
+      const friendId =
+        f.user1_id.toString() === userId ? f.user2_id : f.user1_id;
+      excludeIds.push(new Types.ObjectId(friendId));
+    });
+
+    // 3. Friend requests to exclude:
+    // - Pending requests (both sent and received) - đang chờ xử lý
+    // - Accepted requests - sẽ trở thành friendship (đã xử lý ở bước 2)
+    // Note: Rejected requests KHÔNG loại bỏ - có thể gợi ý lại sau
+    const pendingRequests = await this.friendRequestModel.find({
+      $or: [
+        { requester_id: new Types.ObjectId(userId) },
+        { requestee_id: new Types.ObjectId(userId) },
+      ],
+      status: FriendRequestStatus.Pending,
+    });
+
+    pendingRequests.forEach((req) => {
+      const otherUserId =
+        req.requester_id.toString() === userId
+          ? req.requestee_id
+          : req.requester_id;
+      excludeIds.push(new Types.ObjectId(otherUserId));
+    });
+
+    // 4. Blocked users (both directions)
+    const blocks = await this.blockModel.find({
+      $or: [
+        { blocker_id: new Types.ObjectId(userId) },
+        { blocked_id: new Types.ObjectId(userId) },
+      ],
+    });
+
+    blocks.forEach((block) => {
+      const blockedUserId =
+        block.blocker_id.toString() === userId
+          ? block.blocked_id
+          : block.blocker_id;
+      excludeIds.push(new Types.ObjectId(blockedUserId));
+    });
+
+    // Build query for suggested users
+    const query: any = {
+      _id: { $nin: excludeIds },
+    };
+
+    // Prefer users with same major
+    let suggestedUsers = await this.userModel
+      .find({
+        ...query,
+        major_id: currentUser.major_id,
+      })
+      .select('full_name email avatar major_id')
+      .populate('major_id', 'name')
+      .limit(limit)
+      .lean();
+
+    // If not enough users with same major, get users from other majors
+    if (suggestedUsers.length < limit) {
+      const additionalUsers = await this.userModel
+        .find({
+          ...query,
+          major_id: { $ne: currentUser.major_id },
+        })
+        .select('full_name email avatar major_id')
+        .populate('major_id', 'name')
+        .limit(limit - suggestedUsers.length)
+        .lean();
+
+      suggestedUsers = [...suggestedUsers, ...additionalUsers];
+    }
+
+    // Calculate matching score for each user based on availability overlap
+    const usersWithScore = await Promise.all(
+      suggestedUsers.map(async (user: any) => {
+        let matchScore = 0;
+
+        // +10 points for same major
+        if (
+          currentUser.major_id &&
+          user.major_id &&
+          currentUser.major_id.toString() === user.major_id._id.toString()
+        ) {
+          matchScore += 10;
+        }
+
+        // Calculate availability overlap
+        const otherUserAvailabilities = await this.availabilityModel
+          .find({
+            user_id: user._id,
+          })
+          .lean();
+
+        let overlapCount = 0;
+        for (const userAvail of userAvailabilities) {
+          for (const otherAvail of otherUserAvailabilities) {
+            // Check if same day
+            if (userAvail.day_of_week === otherAvail.day_of_week) {
+              // Check if time overlaps
+              const start1 = userAvail.start_time;
+              const end1 = userAvail.end_time;
+              const start2 = otherAvail.start_time;
+              const end2 = otherAvail.end_time;
+
+              if (start1 < end2 && start2 < end1) {
+                overlapCount++;
+              }
+            }
+          }
+        }
+
+        // +1 point per overlapping availability slot
+        matchScore += overlapCount;
+
+        return {
+          ...user,
+          matchScore,
+          matchReasons: {
+            sameMajor:
+              currentUser.major_id &&
+              user.major_id &&
+              currentUser.major_id.toString() === user.major_id._id.toString(),
+            availabilityOverlap: overlapCount,
+          },
+        };
+      }),
+    );
+
+    // Sort by match score descending
+    usersWithScore.sort((a, b) => b.matchScore - a.matchScore);
+
+    return usersWithScore;
   }
 
   // Search users to add as friends (exclude already friends and pending requests)

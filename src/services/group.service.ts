@@ -29,7 +29,7 @@ export class GroupService {
     description: string = '',
     visibility: GroupVisibility = GroupVisibility.Public,
     maxMember: number = 50,
-  ) {
+  ): Promise<GroupDocument> {
     const group = new this.groupModel({
       group_name: groupName,
       description,
@@ -294,11 +294,7 @@ export class GroupService {
   }
 
   // Helper: Add member
-  private async addMember(
-    groupId: string,
-    userId: string,
-    role: GroupMemberRole,
-  ) {
+  async addMember(groupId: string, userId: string, role: GroupMemberRole) {
     const member = new this.groupMemberModel({
       group_id: new Types.ObjectId(groupId),
       user_id: new Types.ObjectId(userId),

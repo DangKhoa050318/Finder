@@ -171,10 +171,6 @@ export const UserSchemaModule = MongooseModule.forFeatureAsync([
             this.password = await bcrypt.hash(this.password, 10);
           }
           // if user has completed profile, set isNewUser to false
-          console.log(
-            "this.isModified('major_id'): ",
-            this.isModified('major_id'),
-          );
           if (this.isModified('major_id') && this.status.isNewUser) {
             this.status.isNewUser = false;
           }

@@ -12,22 +12,6 @@ import { Role, User, UserDocument } from '../models/user.schema';
 export class UserService {
   constructor(@InjectModel(User.name) private userModel: Model<UserDocument>) {}
 
-  async createAdminIfNotExists() {
-    const existed = await this.userModel.findOne({
-      email: 'admin123@gmail.com',
-    });
-    if (!existed) {
-      const admin = new this.userModel({
-        full_name: 'admin',
-        email: 'admin123@gmail.com',
-        password: '123',
-        role: Role.Admin,
-      });
-      return admin.save();
-    }
-    return existed;
-  }
-
   async create(data: Partial<User>) {
     const user = new this.userModel(data);
     return user.save();
@@ -65,5 +49,65 @@ export class UserService {
 
     user.password = newPassword;
     return user.save();
+  }
+
+  async searchUsers(options: {
+    query?: string;
+    isBlocked?: boolean;
+    major_id?: string;
+    limit?: number;
+    page?: number;
+  }) {
+    const { query, isBlocked, major_id, limit = 20, page = 1 } = options;
+
+    const filter: any = {};
+
+    // Search by name or email
+    if (query) {
+      filter.$or = [
+        { full_name: { $regex: query, $options: 'i' } },
+        { email: { $regex: query, $options: 'i' } },
+      ];
+    }
+
+    // Filter by blocked status
+    if (isBlocked !== undefined) {
+      filter['status.isBlocked'] = isBlocked;
+    }
+
+    // Filter by major
+    if (major_id) {
+      filter.major_id = major_id;
+    }
+
+    const skip = (page - 1) * limit;
+
+    const [users, total] = await Promise.all([
+      this.userModel
+        .find(filter)
+        .select('full_name email avatar major_id status')
+        .populate('major_id', 'name')
+        .limit(limit)
+        .skip(skip)
+        .lean(),
+      this.userModel.countDocuments(filter),
+    ]);
+
+    return {
+      users: users.map((user) => ({
+        _id: user._id,
+        full_name: user.full_name,
+        email: user.email,
+        avatar: user.avatar,
+        major_id: user.major_id,
+        isBlocked: (user as any).status?.isBlocked || false,
+      })),
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
   }
 }

@@ -7,12 +7,14 @@ import {
   Request,
   Param,
   NotFoundException,
+  Query,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiOperation,
   ApiResponse,
   ApiTags,
+  ApiQuery,
 } from '@nestjs/swagger';
 import * as bcrypt from 'bcryptjs';
 import { User } from 'src/decorators/user.decorator';
@@ -21,6 +23,8 @@ import {
   ChangePasswordDto,
   UpdateUserDto,
   UserResponseDto,
+  SearchUsersDto,
+  UserSearchResultDto,
 } from '../dtos/user.dto';
 import { UserService } from '../services/user.service';
 import { toDto } from '../utils/toDto';
@@ -44,6 +48,68 @@ export class UserController {
       throw new NotFoundException('Người dùng không tồn tại');
     }
     return toDto(user, UserResponseDto);
+  }
+
+  @Get('search')
+  @ApiOperation({ summary: 'Tìm kiếm người dùng theo tên, email, và filters' })
+  @ApiQuery({
+    name: 'query',
+    required: false,
+    description: 'Tìm kiếm theo tên hoặc email',
+  })
+  @ApiQuery({
+    name: 'isBlocked',
+    required: false,
+    type: Boolean,
+    description: 'Lọc người dùng bị chặn',
+  })
+  @ApiQuery({
+    name: 'major_id',
+    required: false,
+    description: 'Lọc theo ngành học',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Số lượng kết quả tối đa',
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: Number,
+    description: 'Số trang',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Danh sách người dùng tìm được',
+    schema: {
+      type: 'object',
+      properties: {
+        users: {
+          type: 'array',
+          items: { $ref: '#/components/schemas/UserSearchResultDto' },
+        },
+        pagination: {
+          type: 'object',
+          properties: {
+            total: { type: 'number' },
+            page: { type: 'number' },
+            limit: { type: 'number' },
+            totalPages: { type: 'number' },
+          },
+        },
+      },
+    },
+  })
+  async searchUsers(@Query() searchDto: SearchUsersDto) {
+    return this.userService.searchUsers({
+      query: searchDto.query,
+      isBlocked: searchDto.isBlocked,
+      major_id: searchDto.major_id,
+      limit: searchDto.limit,
+      page: searchDto.page,
+    });
   }
 
   // Support legacy endpoint for direct user ID access

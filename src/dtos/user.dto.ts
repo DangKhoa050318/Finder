@@ -88,3 +88,67 @@ export class ChangePasswordDto {
   @MinLength(8, { message: 'Mật khẩu mới phải có ít nhất 8 ký tự' })
   newPassword: string;
 }
+
+export class SearchUsersDto {
+  @ApiPropertyOptional({
+    description: 'Tìm kiếm theo tên hoặc email',
+    example: 'Nguyễn',
+  })
+  @IsString()
+  @IsOptional()
+  query?: string;
+
+  @ApiPropertyOptional({
+    description: 'Lọc người dùng bị chặn',
+    example: false,
+  })
+  @IsOptional()
+  isBlocked?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Lọc theo ngành học',
+    example: '6523f1c9e7a1b2d3c4e5f6a7',
+  })
+  @IsMongoId({ message: 'major_id phải là ObjectId hợp lệ' })
+  @IsOptional()
+  major_id?: string;
+
+  @ApiPropertyOptional({
+    description: 'Số lượng kết quả tối đa',
+    example: 20,
+    default: 20,
+  })
+  @IsOptional()
+  limit?: number;
+
+  @ApiPropertyOptional({
+    description: 'Số trang',
+    example: 1,
+    default: 1,
+  })
+  @IsOptional()
+  page?: number;
+}
+
+export class UserSearchResultDto {
+  @ApiProperty({ description: 'ID người dùng' })
+  _id: string;
+
+  @ApiProperty({ description: 'Họ và tên' })
+  full_name: string;
+
+  @ApiProperty({ description: 'Email' })
+  email: string;
+
+  @ApiProperty({ description: 'Avatar URL', nullable: true })
+  avatar: string | null;
+
+  @ApiProperty({ description: 'Ngành học', required: false })
+  major_id?: {
+    _id: string;
+    name: string;
+  };
+
+  @ApiProperty({ description: 'Trạng thái bị chặn', required: false })
+  isBlocked?: boolean;
+}
