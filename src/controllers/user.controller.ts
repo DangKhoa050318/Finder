@@ -144,6 +144,7 @@ export class UserController {
     if (!user) {
       throw new NotFoundException('Người dùng không tồn tại');
     }
+    await user.populate('major_id');
 
     return toDto(user, UserResponseDto);
   }
