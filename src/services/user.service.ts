@@ -25,6 +25,10 @@ export class UserService {
     return this.userModel.findById(id);
   }
 
+  async findByIdWithPopulate(id: string) {
+    return this.userModel.findById(id).populate('major_id');
+  }
+
   async updateUserStatus(
     userId: string,
     status: { isNewUser?: boolean; isBlocked?: boolean },

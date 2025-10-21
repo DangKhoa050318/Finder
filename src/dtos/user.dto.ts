@@ -49,6 +49,14 @@ export class UpdateUserDto {
   avatar?: string;
 
   @ApiPropertyOptional({
+    description: 'Giới thiệu bản thân',
+    example: 'Tôi là sinh viên năm 3, thích học nhóm và chia sẻ kiến thức',
+  })
+  @IsString({ message: 'Bio phải là chuỗi ký tự' })
+  @IsOptional()
+  bio?: string;
+
+  @ApiPropertyOptional({
     description: 'Các khung giờ học mong muốn',
     enum: TimeSlot,
     isArray: true,

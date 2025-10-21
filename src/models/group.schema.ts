@@ -60,6 +60,16 @@ export class Group {
   })
   @Prop({ default: 50 })
   max_member: number;
+
+  @ApiProperty({
+    description: 'Avatar nhóm (URL)',
+    example: 'https://api.example.com/avatars/group-1.jpg',
+  })
+  @Prop({
+    type: String,
+    default: 'https://api.dicebear.com/7.x/avataaars/svg?seed=group',
+  })
+  avatar: string;
 }
 
 export const GroupSchema = SchemaFactory.createForClass(Group);

@@ -123,8 +123,21 @@ export class FriendController {
     return this.friendService.getSentRequests(_id);
   }
 
+  @Get('user/:userId')
+  @ApiOperation({ summary: 'Lấy danh sách bạn bè của user khác' })
+  @ApiParam({ name: 'userId', description: 'ID người dùng' })
+  @ApiResponse({
+    status: 200,
+    description: 'Danh sách bạn bè của user',
+    type: [FriendResponseDto],
+  })
+  @ApiResponse({ status: 404, description: 'Người dùng không tồn tại' })
+  async getFriendsOfUser(@Param('userId') userId: string) {
+    return this.friendService.getFriends(userId);
+  }
+
   @Get()
-  @ApiOperation({ summary: 'Lấy danh sách bạn bè' })
+  @ApiOperation({ summary: 'Lấy danh sách bạn bè của user hiện tại' })
   @ApiResponse({
     status: 200,
     description: 'Danh sách bạn bè',
@@ -166,6 +179,7 @@ export class FriendController {
   }
 
   @Get('check/:userId')
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Kiểm tra xem người dùng có phải là bạn bè không' })
   @ApiParam({ name: 'userId', description: 'ID người dùng để kiểm tra' })
   @ApiResponse({
@@ -179,5 +193,33 @@ export class FriendController {
   ) {
     const areFriends = await this.friendService.areFriends(_id, userId);
     return { areFriends };
+  }
+
+  @Get('check-request/:userId')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({
+    summary:
+      'Kiểm tra xem có pending friend request từ current user đến user khác không',
+  })
+  @ApiParam({ name: 'userId', description: 'ID người dùng để kiểm tra' })
+  @ApiResponse({
+    status: 200,
+    description: 'Trả về true/false',
+    schema: {
+      type: 'object',
+      properties: {
+        hasPendingRequest: { type: 'boolean' },
+      },
+    },
+  })
+  async hasPendingRequest(
+    @User() { _id }: JwtPayload,
+    @Param('userId') userId: string,
+  ) {
+    const hasPendingRequest = await this.friendService.hasPendingFriendRequest(
+      _id,
+      userId,
+    );
+    return { hasPendingRequest };
   }
 }

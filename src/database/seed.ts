@@ -139,6 +139,7 @@ async function seed() {
         password: hashedPassword,
         avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=admin',
         role: Role.Admin,
+        major_id: majors[0].id,
       });
       console.log('✅ Đã tạo admin\n');
     }

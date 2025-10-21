@@ -43,7 +43,7 @@ export class UserController {
   })
   @ApiResponse({ status: 404, description: 'Người dùng không tồn tại' })
   async getMe(@User() { _id }: JwtPayload): Promise<UserResponseDto> {
-    const user = await this.userService.findById(_id);
+    const user = await this.userService.findByIdWithPopulate(_id);
     if (!user) {
       throw new NotFoundException('Người dùng không tồn tại');
     }
@@ -121,7 +121,7 @@ export class UserController {
   })
   @ApiResponse({ status: 404, description: 'Người dùng không tồn tại' })
   async getById(@Param('id') id: string): Promise<UserResponseDto> {
-    const user = await this.userService.findById(id);
+    const user = await this.userService.findByIdWithPopulate(id);
     if (!user) {
       throw new NotFoundException('Người dùng không tồn tại');
     }

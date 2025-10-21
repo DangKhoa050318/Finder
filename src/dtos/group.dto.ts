@@ -1,4 +1,13 @@
-import { IsNotEmpty, IsString, IsOptional, IsEnum, IsNumber, Min, Max, MinLength } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsString,
+  IsOptional,
+  IsEnum,
+  IsNumber,
+  Min,
+  Max,
+  MinLength,
+} from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { GroupVisibility } from '../models/group.schema';
 
@@ -14,7 +23,16 @@ export class CreateGroupDto {
   @IsString({ message: 'Mô tả phải là chuỗi' })
   description?: string;
 
-  @ApiPropertyOptional({ enum: GroupVisibility, description: 'Chế độ hiển thị', default: GroupVisibility.Public })
+  @ApiPropertyOptional({ description: 'Avatar nhóm (URL)' })
+  @IsOptional()
+  @IsString({ message: 'Avatar phải là chuỗi' })
+  avatar?: string;
+
+  @ApiPropertyOptional({
+    enum: GroupVisibility,
+    description: 'Chế độ hiển thị',
+    default: GroupVisibility.Public,
+  })
   @IsOptional()
   @IsEnum(GroupVisibility, { message: 'Visibility không hợp lệ' })
   visibility?: GroupVisibility;
@@ -39,7 +57,15 @@ export class UpdateGroupDto {
   @IsString({ message: 'Mô tả phải là chuỗi' })
   description?: string;
 
-  @ApiPropertyOptional({ enum: GroupVisibility, description: 'Chế độ hiển thị' })
+  @ApiPropertyOptional({ description: 'Avatar nhóm (URL)' })
+  @IsOptional()
+  @IsString({ message: 'Avatar phải là chuỗi' })
+  avatar?: string;
+
+  @ApiPropertyOptional({
+    enum: GroupVisibility,
+    description: 'Chế độ hiển thị',
+  })
   @IsOptional()
   @IsEnum(GroupVisibility, { message: 'Visibility không hợp lệ' })
   visibility?: GroupVisibility;

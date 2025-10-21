@@ -19,6 +19,7 @@ import {
   AvailabilityDocument,
 } from '../models/availability.schema';
 import { Block, BlockDocument } from '../models/block.schema';
+import { BlockService } from './block.service';
 
 @Injectable()
 export class FriendService {
@@ -33,6 +34,8 @@ export class FriendService {
     private availabilityModel: Model<AvailabilityDocument>,
     @InjectModel(Block.name)
     private blockModel: Model<BlockDocument>,
+    @Inject(forwardRef(() => BlockService))
+    private blockService: BlockService,
   ) {}
 
   // Send friend request
@@ -41,6 +44,15 @@ export class FriendService {
       throw new BadRequestException(
         'Không thể gửi lời mời kết bạn cho chính mình',
       );
+    }
+
+    // Check if blocked (either direction)
+    const hasBlock = await this.blockService.hasBlockBetween(
+      requesterId,
+      requesteeId,
+    );
+    if (hasBlock) {
+      throw new BadRequestException('Không thể gửi lời mời kết bạn do bị chặn');
     }
 
     // Check if already friends
@@ -91,6 +103,16 @@ export class FriendService {
 
     if (request.status !== FriendRequestStatus.Pending) {
       throw new BadRequestException('Lời mời đã được xử lý');
+    }
+
+    // Check if blocked (either direction)
+    const requesterId = request.requester_id.toString();
+    const hasBlock = await this.blockService.hasBlockBetween(
+      requesterId,
+      userId,
+    );
+    if (hasBlock) {
+      throw new BadRequestException('Không thể chấp nhận lời mời do bị chặn');
     }
 
     // Update request status
@@ -229,6 +251,20 @@ export class FriendService {
     });
 
     return !!friendship;
+  }
+
+  // Check if there's a pending friend request from userId1 to userId2
+  async hasPendingFriendRequest(
+    userId1: string,
+    userId2: string,
+  ): Promise<boolean> {
+    const pendingRequest = await this.friendRequestModel.findOne({
+      requester_id: new Types.ObjectId(userId1),
+      requestee_id: new Types.ObjectId(userId2),
+      status: FriendRequestStatus.Pending,
+    });
+
+    return !!pendingRequest;
   }
 
   // Get suggested friends based on major, availability, and other criteria
