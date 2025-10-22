@@ -64,6 +64,7 @@ import { SlotPrivate, SlotPrivateSchema } from './models/slot-private.schema';
 import { Attendance, AttendanceSchema } from './models/attendance.schema';
 import { Task, TaskSchema } from './models/task.schema';
 import { Reminder, ReminderSchema } from './models/reminder.schema';
+import { Notification, NotificationSchema } from './models/notification.schema';
 // New services
 import { FriendService } from './services/friend.service';
 import { ReportService } from './services/report.service';
@@ -81,6 +82,8 @@ import { MessageService } from './services/message.service';
 import { ChatGateway } from './gateways/chat.gateway';
 // Cron Jobs Module
 import { TasksModule } from './tasks/tasks.module';
+import { NotificationService } from './services/notification.service';
+import { NotificationController } from './controllers/notification.controller';
 
 @Module({
   imports: [
@@ -120,6 +123,7 @@ import { TasksModule } from './tasks/tasks.module';
       { name: Attendance.name, schema: AttendanceSchema },
       { name: Task.name, schema: TaskSchema },
       { name: Reminder.name, schema: ReminderSchema },
+      { name: Notification.name, schema: NotificationSchema },
     ]),
   ],
   controllers: [
@@ -141,6 +145,7 @@ import { TasksModule } from './tasks/tasks.module';
     ReminderController,
     ChatController,
     MessageController,
+    NotificationController,
   ],
   providers: [
     {
@@ -186,6 +191,7 @@ import { TasksModule } from './tasks/tasks.module';
     ChatService,
     MessageService,
     ChatGateway,
+    NotificationService,
   ],
 })
 export class AppModule {}

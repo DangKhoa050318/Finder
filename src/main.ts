@@ -54,28 +54,6 @@ async function bootstrap() {
     console.log(
       `🚀[SERVER] Running on http://localhost:${cfg.env.port}${cfg.env.prefix}`,
     );
-
-    // FIX: Drop old non-sparse index AFTER Mongoose has created indexes
-    setTimeout(async () => {
-      try {
-        const connection = app.get<Connection>(getConnectionToken());
-        const collection = connection.collection('chatparticipants');
-        
-        // Drop tất cả indexes trên user_id
-        try {
-          await collection.dropIndex('user_id_1');
-          console.log('✅ Dropped old user_id_1 index');
-        } catch (err) {
-          console.log('ℹ️ Index user_id_1 không tồn tại');
-        }
-        
-        // Tạo lại index với sparse: true
-        await collection.createIndex({ user_id: 1 }, { sparse: true, name: 'user_id_1' });
-        console.log('✅ Created new sparse index on user_id');
-      } catch (error) {
-        console.error('❌ Error fixing index:', error.message);
-      }
-    }, 2000); // Đợi 2 giây để Mongoose tạo index xong
   });
 }
 bootstrap();
