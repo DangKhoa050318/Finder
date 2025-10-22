@@ -94,7 +94,10 @@ export class FriendService {
 
   // Accept friend request
   async acceptFriendRequest(requestId: string, userId: string) {
-    const request = await this.friendRequestModel.findById(requestId);
+    const requestObjectId = new Types.ObjectId(requestId);
+    const userObjectId = new Types.ObjectId(userId);
+
+    const request = await this.friendRequestModel.findById(requestObjectId);
 
     if (!request) {
       throw new NotFoundException('Không tìm thấy lời mời kết bạn');
@@ -147,7 +150,9 @@ export class FriendService {
 
   // Reject friend request
   async rejectFriendRequest(requestId: string, userId: string) {
-    const request = await this.friendRequestModel.findById(requestId);
+    const requestObjectId = new Types.ObjectId(requestId);
+
+    const request = await this.friendRequestModel.findById(requestObjectId);
 
     if (!request) {
       throw new NotFoundException('Không tìm thấy lời mời kết bạn');
@@ -167,7 +172,9 @@ export class FriendService {
 
   // Cancel friend request (by requester)
   async cancelFriendRequest(requestId: string, userId: string) {
-    const request = await this.friendRequestModel.findById(requestId);
+    const requestObjectId = new Types.ObjectId(requestId);
+
+    const request = await this.friendRequestModel.findById(requestObjectId);
 
     if (!request) {
       throw new NotFoundException('Không tìm thấy lời mời kết bạn');
@@ -181,7 +188,7 @@ export class FriendService {
       throw new BadRequestException('Lời mời đã được xử lý');
     }
 
-    return this.friendRequestModel.findByIdAndDelete(requestId);
+    return this.friendRequestModel.findByIdAndDelete(requestObjectId);
   }
 
   // Get pending friend requests for a user

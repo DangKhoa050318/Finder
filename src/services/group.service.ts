@@ -94,7 +94,8 @@ export class GroupService {
 
   // Delete group
   async deleteGroup(groupId: string, leaderId: string) {
-    const group = await this.groupModel.findById(groupId);
+    const groupObjectId = new Types.ObjectId(groupId);
+    const group = await this.groupModel.findById(groupObjectId);
 
     if (!group) {
       throw new NotFoundException('Không tìm thấy nhóm');
@@ -105,18 +106,19 @@ export class GroupService {
     }
 
     // Delete all members
-    await this.groupMemberModel.deleteMany({ group_id: groupId });
+    await this.groupMemberModel.deleteMany({ group_id: groupObjectId });
 
     // Delete group
-    await this.groupModel.findByIdAndDelete(groupId);
+    await this.groupModel.findByIdAndDelete(groupObjectId);
 
     return { message: 'Đã xóa nhóm thành công' };
   }
 
   // Get group by ID
   async getGroupById(groupId: string) {
+    const groupObjectId = new Types.ObjectId(groupId);
     const group = await this.groupModel
-      .findById(groupId)
+      .findById(groupObjectId)
       .populate('leader_id', 'full_name email avatar');
 
     if (!group) {
@@ -125,7 +127,7 @@ export class GroupService {
 
     // Get member count
     const memberCount = await this.groupMemberModel.countDocuments({
-      group_id: groupId,
+      group_id: groupObjectId,
     });
 
     return {
@@ -189,9 +191,11 @@ export class GroupService {
 
   // Get groups of a specific user (groups they are a member of)
   async getUserGroups(userId: string) {
+    const userObjectId = new Types.ObjectId(userId);
+
     // Find all group memberships for this user
     const memberships = await this.groupMemberModel
-      .find({ user_id: userId })
+      .find({ user_id: userObjectId })
       .select('group_id');
 
     const groupIds = memberships.map((m) => m.group_id);
@@ -220,7 +224,10 @@ export class GroupService {
 
   // Join group
   async joinGroup(groupId: string, userId: string) {
-    const group = await this.groupModel.findById(groupId);
+    const groupObjectId = new Types.ObjectId(groupId);
+    const userObjectId = new Types.ObjectId(userId);
+
+    const group = await this.groupModel.findById(groupObjectId);
 
     if (!group) {
       throw new NotFoundException('Không tìm thấy nhóm');
@@ -228,8 +235,8 @@ export class GroupService {
 
     // Check if already a member
     const existingMember = await this.groupMemberModel.findOne({
-      group_id: groupId,
-      user_id: userId,
+      group_id: groupObjectId,
+      user_id: userObjectId,
     });
 
     if (existingMember) {
@@ -238,18 +245,24 @@ export class GroupService {
 
     // Check member count
     const memberCount = await this.groupMemberModel.countDocuments({
-      group_id: groupId,
+      group_id: groupObjectId,
     });
     if (memberCount >= group.max_member) {
       throw new BadRequestException('Nhóm đã đầy');
     }
 
-    return this.addMember(groupId, userId, GroupMemberRole.Member);
+    await this.addMember(groupId, userId, GroupMemberRole.Member);
+
+    // Return updated group with memberCount
+    return this.getGroupById(groupId);
   }
 
   // Leave group
   async leaveGroup(groupId: string, userId: string) {
-    const group = await this.groupModel.findById(groupId);
+    const groupObjectId = new Types.ObjectId(groupId);
+    const userObjectId = new Types.ObjectId(userId);
+
+    const group = await this.groupModel.findById(groupObjectId);
 
     if (!group) {
       throw new NotFoundException('Không tìm thấy nhóm');
@@ -263,8 +276,8 @@ export class GroupService {
     }
 
     const result = await this.groupMemberModel.findOneAndDelete({
-      group_id: groupId,
-      user_id: userId,
+      group_id: groupObjectId,
+      user_id: userObjectId,
     });
 
     if (!result) {
@@ -276,15 +289,29 @@ export class GroupService {
 
   // Get group members
   async getGroupMembers(groupId: string) {
-    return this.groupMemberModel
-      .find({ group_id: groupId })
+    const groupObjectId = new Types.ObjectId(groupId);
+
+    const members = await this.groupMemberModel
+      .find({ group_id: groupObjectId })
       .populate('user_id', 'full_name email avatar')
       .sort({ joined_at: 1 });
+
+    // Extract user data from populated user_id
+    return members.map((member) => ({
+      _id: (member.user_id as any)._id,
+      full_name: (member.user_id as any).full_name,
+      email: (member.user_id as any).email,
+      avatar: (member.user_id as any).avatar,
+    }));
   }
 
   // Remove member (leader only)
   async removeMember(groupId: string, leaderId: string, memberId: string) {
-    const group = await this.groupModel.findById(groupId);
+    const groupObjectId = new Types.ObjectId(groupId);
+    const leaderObjectId = new Types.ObjectId(leaderId);
+    const memberObjectId = new Types.ObjectId(memberId);
+
+    const group = await this.groupModel.findById(groupObjectId);
 
     if (!group) {
       throw new NotFoundException('Không tìm thấy nhóm');
@@ -299,8 +326,8 @@ export class GroupService {
     }
 
     const result = await this.groupMemberModel.findOneAndDelete({
-      group_id: groupId,
-      user_id: memberId,
+      group_id: groupObjectId,
+      user_id: memberObjectId,
     });
 
     if (!result) {
@@ -316,7 +343,11 @@ export class GroupService {
     currentLeaderId: string,
     newLeaderId: string,
   ) {
-    const group = await this.groupModel.findById(groupId);
+    const groupObjectId = new Types.ObjectId(groupId);
+    const currentLeaderObjectId = new Types.ObjectId(currentLeaderId);
+    const newLeaderObjectId = new Types.ObjectId(newLeaderId);
+
+    const group = await this.groupModel.findById(groupObjectId);
 
     if (!group) {
       throw new NotFoundException('Không tìm thấy nhóm');
@@ -328,8 +359,8 @@ export class GroupService {
 
     // Check if new leader is a member
     const newLeader = await this.groupMemberModel.findOne({
-      group_id: groupId,
-      user_id: newLeaderId,
+      group_id: groupObjectId,
+      user_id: newLeaderObjectId,
     });
 
     if (!newLeader) {
@@ -339,12 +370,12 @@ export class GroupService {
     }
 
     // Update group leader
-    group.leader_id = new Types.ObjectId(newLeaderId);
+    group.leader_id = newLeaderObjectId;
     await group.save();
 
     // Update old leader role to member
     await this.groupMemberModel.findOneAndUpdate(
-      { group_id: groupId, user_id: currentLeaderId },
+      { group_id: groupObjectId, user_id: currentLeaderObjectId },
       { role: GroupMemberRole.Member },
     );
 
@@ -368,15 +399,19 @@ export class GroupService {
 
   // Check if user is group leader
   async isGroupLeader(groupId: string, userId: string): Promise<boolean> {
-    const group = await this.groupModel.findById(groupId);
+    const groupObjectId = new Types.ObjectId(groupId);
+    const group = await this.groupModel.findById(groupObjectId);
     return group?.leader_id.toString() === userId;
   }
 
   // Check if user is group member
   async isGroupMember(groupId: string, userId: string): Promise<boolean> {
+    const groupObjectId = new Types.ObjectId(groupId);
+    const userObjectId = new Types.ObjectId(userId);
+
     const member = await this.groupMemberModel.findOne({
-      group_id: groupId,
-      user_id: userId,
+      group_id: groupObjectId,
+      user_id: userObjectId,
     });
     return !!member;
   }

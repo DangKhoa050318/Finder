@@ -26,8 +26,10 @@ export class NewsService {
     newsId: string,
     updates: { title?: string; content?: string },
   ) {
+    const newsObjectId = new Types.ObjectId(newsId);
+
     const news = await this.newsModel
-      .findByIdAndUpdate(newsId, { $set: updates }, { new: true })
+      .findByIdAndUpdate(newsObjectId, { $set: updates }, { new: true })
       .populate('author_id', 'full_name email avatar');
 
     if (!news) {
@@ -39,7 +41,9 @@ export class NewsService {
 
   // Delete news (admin only)
   async deleteNews(newsId: string) {
-    const news = await this.newsModel.findByIdAndDelete(newsId);
+    const newsObjectId = new Types.ObjectId(newsId);
+
+    const news = await this.newsModel.findByIdAndDelete(newsObjectId);
 
     if (!news) {
       throw new NotFoundException('Không tìm thấy tin tức');
@@ -72,8 +76,10 @@ export class NewsService {
 
   // Get news by ID
   async getNewsById(newsId: string) {
+    const newsObjectId = new Types.ObjectId(newsId);
+
     const news = await this.newsModel
-      .findById(newsId)
+      .findById(newsObjectId)
       .populate('author_id', 'full_name email avatar');
 
     if (!news) {

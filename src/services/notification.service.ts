@@ -104,7 +104,10 @@ export class NotificationService {
    * Get a single notification by ID
    */
   async getNotificationById(id: string): Promise<Notification> {
-    const notification = await this.notificationModel.findById(id);
+    const notificationObjectId = new Types.ObjectId(id);
+
+    const notification =
+      await this.notificationModel.findById(notificationObjectId);
 
     if (!notification) {
       throw new NotFoundException('Không tìm thấy thông báo');
@@ -120,8 +123,10 @@ export class NotificationService {
     id: string,
     dto: UpdateNotificationDto,
   ): Promise<Notification> {
+    const notificationObjectId = new Types.ObjectId(id);
+
     const notification = await this.notificationModel.findByIdAndUpdate(
-      id,
+      notificationObjectId,
       {
         ...dto,
         updatedAt: new Date(),
