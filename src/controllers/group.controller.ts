@@ -80,7 +80,23 @@ export class GroupController {
   @ApiQuery({ name: 'limit', required: false, type: Number })
   @ApiQuery({ name: 'visibility', required: false, enum: GroupVisibility })
   @ApiQuery({ name: 'search', required: false, type: String })
-  @ApiResponse({ status: 200, description: 'Danh sách các group' })
+  @ApiResponse({
+    status: 200,
+    description: 'Danh sách các group với pagination',
+    schema: {
+      type: 'object',
+      properties: {
+        data: {
+          type: 'array',
+          description: 'Mảng các group, mỗi group có memberCount',
+        },
+        total: { type: 'number' },
+        page: { type: 'number' },
+        limit: { type: 'number' },
+        totalPages: { type: 'number' },
+      },
+    },
+  })
   async getGroups(
     @Query('page') page?: number,
     @Query('limit') limit?: number,
@@ -88,6 +104,22 @@ export class GroupController {
     @Query('search') search?: string,
   ) {
     return this.groupService.getGroups(page, limit, visibility, search);
+  }
+
+  @Get('user/:userId')
+  @ApiOperation({ summary: 'Lấy danh sách các group của user' })
+  @ApiParam({ name: 'userId', description: 'ID người dùng' })
+  @ApiResponse({
+    status: 200,
+    description: 'Danh sách các group mà user tham gia',
+    schema: {
+      type: 'array',
+      description: 'Mảng các group với memberCount',
+    },
+  })
+  @ApiResponse({ status: 404, description: 'Người dùng không tồn tại' })
+  async getUserGroups(@Param('userId') userId: string) {
+    return this.groupService.getUserGroups(userId);
   }
 
   @Get(':groupId')

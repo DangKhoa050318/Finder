@@ -115,6 +115,14 @@ export class User {
   })
   avatar: string;
 
+  @ApiProperty({
+    example: 'Tôi là sinh viên năm 3, thích học nhóm và chia sẻ kiến thức',
+    description: 'Giới thiệu bản thân',
+    required: false,
+  })
+  @Prop({ type: String, default: '' })
+  bio: string;
+
   @ApiProperty({ default: null, type: 'string', format: 'ObjectId' })
   @Prop({ type: Types.ObjectId, ref: 'Major', default: null })
   @IsMongoId({ message: 'major_id phải là ObjectId hợp lệ' })

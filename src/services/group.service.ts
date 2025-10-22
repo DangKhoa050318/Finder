@@ -73,6 +73,7 @@ export class GroupService {
     updates: {
       group_name?: string;
       description?: string;
+      avatar?: string;
       visibility?: GroupVisibility;
       max_member?: number;
     },
@@ -164,12 +165,57 @@ export class GroupService {
       this.groupModel.countDocuments(filter),
     ]);
 
+    // Add member count to each group
+    const groupsWithMembers = await Promise.all(
+      groups.map(async (group) => {
+        const memberCount = await this.groupMemberModel.countDocuments({
+          group_id: group._id,
+        });
+        return {
+          ...group.toObject(),
+          memberCount,
+        };
+      }),
+    );
+
     return {
-      groups,
+      data: groupsWithMembers,
       total,
       page,
+      limit,
       totalPages: Math.ceil(total / limit),
     };
+  }
+
+  // Get groups of a specific user (groups they are a member of)
+  async getUserGroups(userId: string) {
+    // Find all group memberships for this user
+    const memberships = await this.groupMemberModel
+      .find({ user_id: userId })
+      .select('group_id');
+
+    const groupIds = memberships.map((m) => m.group_id);
+
+    // Get group details with member count
+    const groups = await this.groupModel
+      .find({ _id: { $in: groupIds } })
+      .populate('leader_id', 'full_name email avatar')
+      .sort({ created_at: -1 });
+
+    // Add member count to each group
+    const groupsWithMembers = await Promise.all(
+      groups.map(async (group) => {
+        const memberCount = await this.groupMemberModel.countDocuments({
+          group_id: group._id,
+        });
+        return {
+          ...group.toObject(),
+          memberCount,
+        };
+      }),
+    );
+
+    return groupsWithMembers;
   }
 
   // Join group
