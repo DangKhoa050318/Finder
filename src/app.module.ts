@@ -38,6 +38,8 @@ import { SlotController } from './controllers/slot.controller';
 import { AttendanceController } from './controllers/attendance.controller';
 import { TaskController } from './controllers/task.controller';
 import { ReminderController } from './controllers/reminder.controller';
+import { ChatController } from './controllers/chat.controller';
+import { MessageController } from './controllers/message.controller';
 // New schemas
 import {
   FriendRequest,
@@ -73,10 +75,17 @@ import { SlotService } from './services/slot.service';
 import { AttendanceService } from './services/attendance.service';
 import { TaskService } from './services/task.service';
 import { ReminderService } from './services/reminder.service';
+import { ChatService } from './services/chat.service';
+import { MessageService } from './services/message.service';
+// WebSocket Gateway
+import { ChatGateway } from './gateways/chat.gateway';
+// Cron Jobs Module
+import { TasksModule } from './tasks/tasks.module';
 
 @Module({
   imports: [
     GlobalModule,
+    TasksModule,
     MongooseModule.forRootAsync({
       useFactory: (cfg: ConfigService) => {
         return {
@@ -130,6 +139,8 @@ import { ReminderService } from './services/reminder.service';
     AttendanceController,
     TaskController,
     ReminderController,
+    ChatController,
+    MessageController,
   ],
   providers: [
     {
@@ -172,6 +183,9 @@ import { ReminderService } from './services/reminder.service';
     AttendanceService,
     TaskService,
     ReminderService,
+    ChatService,
+    MessageService,
+    ChatGateway,
   ],
 })
 export class AppModule {}

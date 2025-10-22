@@ -3,6 +3,8 @@ import {
   NotFoundException,
   BadRequestException,
   ForbiddenException,
+  Inject,
+  forwardRef,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
@@ -12,6 +14,7 @@ import {
   GroupMemberDocument,
   GroupMemberRole,
 } from '../models/group-member.schema';
+import { ChatService } from './chat.service';
 
 @Injectable()
 export class GroupService {
@@ -20,6 +23,8 @@ export class GroupService {
     private groupModel: Model<GroupDocument>,
     @InjectModel(GroupMember.name)
     private groupMemberModel: Model<GroupMemberDocument>,
+    @Inject(forwardRef(() => ChatService))
+    private chatService: ChatService,
   ) {}
 
   // Create group
@@ -46,6 +51,17 @@ export class GroupService {
       leaderId,
       GroupMemberRole.Leader,
     );
+
+    // Auto-create group chat
+    try {
+      await this.chatService.createGroupChat(
+        (savedGroup._id as any).toString(),
+        [leaderId],
+      );
+    } catch (error) {
+      // Log error but don't fail the group creation
+      console.error('Failed to create group chat:', error);
+    }
 
     return savedGroup;
   }

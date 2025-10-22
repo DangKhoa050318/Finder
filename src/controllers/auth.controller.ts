@@ -16,11 +16,16 @@ import { UserResponseDto } from '../dtos/user.dto';
 import { Public } from '../decorators/public.decorator';
 import { User } from 'src/decorators/user.decorator';
 import type { JwtPayload } from 'src/types/jwt';
+import { InjectConnection } from '@nestjs/mongoose';
+import { Connection } from 'mongoose';
 
 @ApiTags('Authentication')
 @Controller('auth')
 export class AuthController {
-  constructor(private authService: AuthService) {}
+  constructor(
+    private authService: AuthService,
+    @InjectConnection() private connection: Connection,
+  ) {}
 
   @Public()
   @Post('login')
@@ -59,5 +64,31 @@ export class AuthController {
   @ApiResponse({ status: 401, description: 'Chưa xác thực' })
   async getMe(@User() { email }: JwtPayload) {
     return this.authService.getMe(email);
+  }
+
+  @Public()
+  @Post('fix-index')
+  @ApiOperation({ summary: 'Fix ChatParticipant index - TEMPORARY ENDPOINT' })
+  async fixIndex() {
+    try {
+      const collection = this.connection.collection('chatparticipants');
+      
+      // Drop old index
+      try {
+        await collection.dropIndex('user_id_1');
+        console.log('Dropped old user_id_1 index');
+      } catch (err) {
+        console.log('Index user_id_1 không tồn tại hoặc đã drop');
+      }
+      
+      // Create new sparse index
+      await collection.createIndex({ user_id: 1 }, { sparse: true });
+      console.log('Created new sparse index on user_id');
+      
+      return { message: 'Index đã được sửa thành công' };
+    } catch (error) {
+      console.error('Error fixing index:', error);
+      return { error: error.message };
+    }
   }
 }

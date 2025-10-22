@@ -19,6 +19,7 @@ import {
   AvailabilityDocument,
 } from '../models/availability.schema';
 import { Block, BlockDocument } from '../models/block.schema';
+import { ChatService } from './chat.service';
 
 @Injectable()
 export class FriendService {
@@ -33,6 +34,8 @@ export class FriendService {
     private availabilityModel: Model<AvailabilityDocument>,
     @InjectModel(Block.name)
     private blockModel: Model<BlockDocument>,
+    @Inject(forwardRef(() => ChatService))
+    private chatService: ChatService,
   ) {}
 
   // Send friend request
@@ -109,8 +112,13 @@ export class FriendService {
 
     await friendship.save();
 
-    // TODO: Create private chat for these two users
-    // await this.chatService.createPrivateChat(user1, user2);
+    // Auto-create private chat for these two users
+    try {
+      await this.chatService.findOrCreatePrivateChat(user1, user2);
+    } catch (error) {
+      // Log error but don't fail the friend acceptance
+      console.error('Failed to create private chat:', error);
+    }
 
     return { request, friendship };
   }

@@ -154,6 +154,9 @@ export class User {
 
   comparePassword: (password: string) => Promise<boolean>;
 }
+
+export const UserSchema = SchemaFactory.createForClass(User);
+
 export const UserSchemaModule = MongooseModule.forFeatureAsync([
   {
     name: User.name,
@@ -180,9 +183,9 @@ export const UserSchemaModule = MongooseModule.forFeatureAsync([
           next(error);
         }
       });
-      return UserSchema;
+      return schema;
     },
     inject: [ConfigService],
   },
 ]);
-export const UserSchema = SchemaFactory.createForClass(User);
+

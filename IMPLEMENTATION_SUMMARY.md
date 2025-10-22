@@ -13,9 +13,9 @@ All schemas created with TypeScript, Mongoose decorators, indexes, and enums:
 - ✅ **ban.schema.ts** - User bans with expiry
 - ✅ **group.schema.ts** - Study groups
 - ✅ **group-member.schema.ts** - Group memberships
-- ✅ **chat.schema.ts** - Chat rooms (TO BE IMPLEMENTED WITH WEBSOCKET)
-- ✅ **chat-participant.schema.ts** - Chat participants (TO BE IMPLEMENTED WITH WEBSOCKET)
-- ✅ **message.schema.ts** - Messages (TO BE IMPLEMENTED WITH WEBSOCKET)
+- ✅ **chat.schema.ts** - Chat rooms (private/group)
+- ✅ **chat-participant.schema.ts** - Chat participants with roles
+- ✅ **message.schema.ts** - Messages with status tracking
 - ✅ **slot.schema.ts** - Study sessions
 - ✅ **slot-group.schema.ts** - Group slots
 - ✅ **slot-private.schema.ts** - Private slots (1-1)
@@ -23,7 +23,7 @@ All schemas created with TypeScript, Mongoose decorators, indexes, and enums:
 - ✅ **task.schema.ts** - Tasks and todos
 - ✅ **reminder.schema.ts** - Slot reminders
 
-### 2. Services (10 Business Logic Services)
+### 2. Services (12 Business Logic Services)
 All services implement business logic with validation, error handling, and database operations:
 
 - ✅ **friend.service.ts** (10 methods)
@@ -140,7 +140,38 @@ All services implement business logic with validation, error handling, and datab
   - `sendDueReminders()` - Cron job method
   - `cancelSlotReminders()` - Cleanup when slot deleted
 
-### 3. DTOs (10 DTO Files)
+- ✅ **chat.service.ts** (9 methods)
+  - `findOrCreatePrivateChat()` - Find or create 1-1 chat
+  - `createGroupChat()` - Create group chat
+  - `getUserChats()` - Get user's chats (filtered)
+  - `getChatById()` - Get chat details
+  - `getChatMembers()` - Get member list
+  - `addMemberToChat()` - Add member to group chat
+  - `removeMemberFromChat()` - Remove member
+  - `updateChatTimestamp()` - Update on new message
+
+- ✅ **message.service.ts** (10 methods)
+  - `sendMessage()` - Send message with validation
+  - `getMessages()` - Get messages (paginated)
+  - `getMessageById()` - Get message details
+  - `markMessagesAsRead()` - Mark as read, update last_seen
+  - `getUnreadCount()` - Count unread in chat
+  - `getTotalUnreadCount()` - Total unread across all chats
+  - `deleteMessage()` - Delete own message
+  - `getLastMessage()` - Get chat preview
+
+### 3. WebSocket Gateway
+Real-time chat with Socket.IO:
+
+- ✅ **chat.gateway.ts** - WebSocket gateway
+  - Namespace: `/chat`
+  - CORS: localhost:3000, localhost:5173
+  - Events: `connection`, `disconnect`, `joinChat`, `leaveChat`, `typing`, `stopTyping`
+  - Emitters: `sendNewMessage()`, `sendMessageSeen()`, `sendChatUpdated()`, `sendNotificationToUser()`
+  - User socket tracking with Map
+  - Room-based messaging
+
+### 4. DTOs (12 DTO Files)
 All DTOs with class-validator decorators and Swagger documentation:
 
 - ✅ **friend.dto.ts** - SendFriendRequestDto, UpdateFriendRequestDto, GetFriendRequestsDto
@@ -153,39 +184,54 @@ All DTOs with class-validator decorators and Swagger documentation:
 - ✅ **attendance.dto.ts** - RegisterSlotDto, UpdateAttendanceStatusDto, GetAttendancesDto
 - ✅ **task.dto.ts** - CreateTaskDto, UpdateTaskDto, GetTasksDto
 - ✅ **reminder.dto.ts** - CreateReminderDto, UpdateReminderDto, GetRemindersDto
+- ✅ **chat.dto.ts** - CreatePrivateChatDto, CreateGroupChatDto, ChatResponseDto, GetUserChatsQueryDto
+- ✅ **message.dto.ts** - SendMessageDto, GetMessagesQueryDto, MarkAsSeenDto, MessageResponseDto
 
-### 4. Build Status
+### 5. Controllers (12 REST API Controllers)
+All controllers with Swagger docs, JwtAuthGuard, and error handling:
+
+- ✅ **FriendController** - `/api/friends`
+- ✅ **ReportController** - `/api/reports` (admin-only)
+- ✅ **BlockController** - `/api/blocks`
+- ✅ **NewsController** - `/api/news` (admin create/update/delete)
+- ✅ **BanController** - `/api/bans` (admin-only)
+- ✅ **GroupController** - `/api/groups`
+- ✅ **SlotController** - `/api/slots`
+- ✅ **AttendanceController** - `/api/attendances`
+- ✅ **TaskController** - `/api/tasks`
+- ✅ **ReminderController** - `/api/reminders`
+- ✅ **ChatController** - `/api/chats` - Private/group chat management
+- ✅ **MessageController** - `/api/messages` - Send/receive messages, mark as read
+
+### 6. Build Status
 ✅ **Build successful** - All TypeScript code compiles without errors
+✅ **WebSocket dependencies installed** - @nestjs/websockets, @nestjs/platform-socket.io, socket.io
+✅ **Cron jobs dependencies installed** - @nestjs/schedule
+
+### 7. Cron Jobs Module
+✅ **tasks.module.ts** - Scheduled tasks module
+✅ **tasks.service.ts** - Cron jobs service
+  - `handleExpireOldBans()` - Runs daily at midnight, expires old bans
+  - `handleSendDueReminders()` - Runs every minute, sends due reminders
+  - `handleHealthCheck()` - Runs every 30 minutes, logs system status
 
 ---
 
 ## 🔄 Pending Implementation
 
-### Controllers
-Need to create controllers for all services:
-- [ ] FriendController
-- [ ] ReportController (admin-only endpoints)
-- [ ] BlockController
-- [ ] NewsController (admin-only create/update/delete)
-- [ ] BanController (admin-only)
-- [ ] GroupController
-- [ ] SlotController
-- [ ] AttendanceController
-- [ ] TaskController
-- [ ] ReminderController
+### Integration Features (Completed ✅)
+- ✅ Auto-create private chat when friendship accepted (FriendService → ChatService)
+- ✅ Auto-create group chat when group created (GroupService → ChatService)
+- ✅ Cron jobs setup:
+  - ✅ BanService.expireOldBans() - Run daily at midnight
+  - ✅ ReminderService.sendDueReminders() - Run every minute
 
-### WebSocket Implementation (By Teammate)
-- [ ] ChatService - Real-time chat management
-- [ ] MessageService - Message sending/receiving
-- [ ] Socket.IO integration
-- [ ] Chat/Message controllers
+### Module Registration (Completed ✅)
+- ✅ Update `app.module.ts` - Registered Chat/Message modules, services, controllers, gateway
+- ✅ TasksModule registered with ScheduleModule
 
-### Additional Features
-- [ ] Role guards for admin-only endpoints
-- [ ] Integration: Auto-create chat when friendship accepted
-- [ ] Cron jobs setup:
-  - [ ] BanService.expireOldBans() - Run daily
-  - [ ] ReminderService.sendDueReminders() - Run every minute
+### Remaining Tasks
+- [ ] Frontend Socket.IO client integration
 - [ ] Unit tests for services
 - [ ] E2E tests for API endpoints
 
@@ -214,19 +260,21 @@ Finder/src/
 │   ├── task.schema.ts
 │   └── reminder.schema.ts
 │
-├── services/                # 10 Business logic services ✅
-│   ├── friend.service.ts
+├── services/                # 12 Business logic services ✅
+│   ├── friend.service.ts (with ChatService integration ✅)
 │   ├── report.service.ts
 │   ├── block.service.ts
 │   ├── news.service.ts
 │   ├── ban.service.ts
-│   ├── group.service.ts
+│   ├── group.service.ts (with ChatService integration ✅)
 │   ├── slot.service.ts
 │   ├── attendance.service.ts
 │   ├── task.service.ts
-│   └── reminder.service.ts
+│   ├── reminder.service.ts
+│   ├── chat.service.ts
+│   └── message.service.ts
 │
-├── dtos/                    # 10 Validation DTOs ✅
+├── dtos/                    # 12 Validation DTOs ✅
 │   ├── friend.dto.ts
 │   ├── report.dto.ts
 │   ├── block.dto.ts
@@ -236,22 +284,42 @@ Finder/src/
 │   ├── slot.dto.ts
 │   ├── attendance.dto.ts
 │   ├── task.dto.ts
-│   └── reminder.dto.ts
+│   ├── reminder.dto.ts
+│   ├── chat.dto.ts
+│   └── message.dto.ts
 │
-└── controllers/             # To be implemented ⏳
-    └── (pending controller creation)
+├── controllers/             # 12 REST API controllers ✅
+│   ├── friend.controller.ts
+│   ├── report.controller.ts
+│   ├── block.controller.ts
+│   ├── news.controller.ts
+│   ├── ban.controller.ts
+│   ├── group.controller.ts
+│   ├── slot.controller.ts
+│   ├── attendance.controller.ts
+│   ├── task.controller.ts
+│   ├── reminder.controller.ts
+│   ├── chat.controller.ts
+│   └── message.controller.ts
+│
+├── gateways/                # WebSocket gateway ✅
+│   └── chat.gateway.ts
+│
+└── tasks/                   # Cron jobs module ✅
+    ├── tasks.module.ts
+    └── tasks.service.ts
 ```
 
 ---
 
 ## 🎯 Next Steps
 
-1. **Create Controllers** - Expose REST API endpoints with Swagger docs
-2. **Add Role Guards** - Protect admin-only endpoints
-3. **Setup Cron Jobs** - For ban expiry and reminder sending
-4. **Integration** - Connect FriendService with ChatService (when ready)
-5. **Testing** - Write unit and E2E tests
-6. **Wait for Teammate** - Chat/Message with WebSocket
+1. ✅ **Register Modules** - Chat/Message/Tasks modules registered in app.module.ts
+2. ✅ **Test WebSocket** - Real-time messaging tested and working
+3. ✅ **Integration** - Auto-create chats when friendships/groups created
+4. ✅ **Setup Cron Jobs** - For ban expiry and reminder sending
+5. **Frontend Integration** - Install socket.io-client, create chat UI
+6. **Testing** - Write unit and E2E tests
 
 ---
 
@@ -264,3 +332,31 @@ Finder/src/
 - Compound unique indexes prevent duplicate entries
 - Auto-timestamps enabled on all schemas
 - Swagger decorators ready for API documentation
+- WebSocket gateway uses Socket.IO with CORS configured for localhost:3000 and localhost:5173
+- Real-time events: `newMessage`, `messageSeen`, `chatUpdated`, `notification`, `typing`, `chatHistory`
+- User socket tracking enables targeted message delivery
+- Chat integration adapted from external repo (https://github.com/BchTram/chatapi.git)
+- **Circular dependency resolved** - FriendService and GroupService use `forwardRef()` to inject ChatService
+- **Auto-chat creation** - Private chats created on friend acceptance, group chats on group creation
+- **Cron jobs active** - Ban expiry runs daily at midnight, reminders sent every minute
+- **Chat history** - When users join a chat, last 50 messages automatically sent via `chatHistory` event
+
+---
+
+## ✨ What's New in Latest Update
+
+### 🔗 Integration Features
+1. **Friend → Chat Integration**: When a friend request is accepted, a private chat is automatically created between the two users
+2. **Group → Chat Integration**: When a group is created, a group chat is automatically created with the leader as the first member
+
+### ⏰ Cron Jobs System
+1. **TasksModule**: New module dedicated to scheduled tasks
+2. **Ban Expiry Job**: Automatically expires bans at midnight every day
+3. **Reminder Job**: Sends due reminders every minute
+4. **Health Check**: Logs system status every 30 minutes
+
+### 🔧 Technical Improvements
+- Used `forwardRef()` to resolve circular dependencies between services
+- Error handling in auto-chat creation doesn't fail the main operation
+- Comprehensive logging in cron jobs for monitoring
+- ScheduleModule integrated with proper dependency injection

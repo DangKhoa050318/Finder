@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test Chat WebSocket</title>
+  <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .container {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    h1 {
+      color: #333;
+      border-bottom: 2px solid #4CAF50;
+      padding-bottom: 10px;
+    }
+    .section {
+      margin: 20px 0;
+      padding: 15px;
+      background: #f9f9f9;
+      border-left: 4px solid #4CAF50;
+    }
+    input, button, textarea {
+      padding: 10px;
+      margin: 5px 0;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+    input {
+      width: calc(100% - 22px);
+    }
+    button {
+      background: #4CAF50;
+      color: white;
+      border: none;
+      cursor: pointer;
+      padding: 10px 20px;
+    }
+    button:hover {
+      background: #45a049;
+    }
+    button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+    #logs {
+      background: #1e1e1e;
+      color: #00ff00;
+      padding: 15px;
+      border-radius: 4px;
+      height: 300px;
+      overflow-y: auto;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      white-space: pre-wrap;
+    }
+    .status {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      margin-right: 5px;
+    }
+    .status.connected {
+      background: #4CAF50;
+    }
+    .status.disconnected {
+      background: #f44336;
+    }
+    .info {
+      background: #e3f2fd;
+      padding: 10px;
+      border-radius: 4px;
+      margin: 10px 0;
+      border-left: 4px solid #2196F3;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔌 Test Chat WebSocket - Study Together</h1>
+    
+    <div class="info">
+      <strong>📋 Hướng dẫn Test Nhanh:</strong><br>
+      1. Nhập JWT token (lấy từ đăng nhập) → Click "Connect"<br>
+      2. Nhập User ID của 2 users → Click "Create Test Chat"<br>
+      3. Chat ID sẽ tự động điền → Click "Join Chat"<br>
+      4. Gửi message và xem real-time!<br>
+      5. Sau khi test xong → Click "Cleanup Test Data" để dọn dẹp
+    </div>
+
+    <!-- Connection Section -->
+    <div class="section">
+      <h3>
+        <span class="status" id="status"></span>
+        Kết nối WebSocket
+      </h3>
+      <input 
+        type="text" 
+        id="jwtToken" 
+        placeholder="Nhập JWT Token (từ /auth/login)"
+      >
+      <button onclick="connect()" id="connectBtn">Connect</button>
+      <button onclick="disconnect()" id="disconnectBtn" disabled>Disconnect</button>
+    </div>
+
+    <!-- Create Chat Section -->
+    <div class="section">
+      <h3>🆕 Tạo Chat (User 1 làm)</h3>
+      <input 
+        type="text" 
+        id="user1Id" 
+        placeholder="User 1 ID (your ID)"
+      >
+      <input 
+        type="text" 
+        id="user2Id" 
+        placeholder="User 2 ID (friend's ID)"
+      >
+      <button onclick="createPrivateChat()" disabled class="action-btn">Create Private Chat</button>
+      <p style="color: #666; font-size: 12px; margin: 5px 0;">
+        💡 User 1 tạo chat → Copy Chat ID → Gửi cho User 2 → User 2 paste vào ô "Chat ID" bên dưới
+      </p>
+    </div>
+
+    <!-- Chat Actions -->
+    <div class="section">
+      <h3>💬 Join Chat & Actions</h3>
+      
+      <input 
+        type="text" 
+        id="chatId" 
+        placeholder="Chat ID (paste từ User 1 nếu bạn là User 2)"
+      >
+      <input 
+        type="text" 
+        id="userId" 
+        placeholder="Your User ID"
+      >
+      
+      <div style="margin-top: 10px;">
+        <button onclick="joinChat()" disabled class="action-btn">Join Chat</button>
+        <button onclick="leaveChat()" disabled class="action-btn">Leave Chat</button>
+        <button onclick="sendTyping()" disabled class="action-btn">Typing</button>
+        <button onclick="stopTyping()" disabled class="action-btn">Stop Typing</button>
+      </div>
+    </div>
+
+    <!-- REST API Section -->
+    <div class="section">
+      <h3>📡 Test REST API (Gửi Message)</h3>
+      
+      <textarea 
+        id="messageContent" 
+        placeholder="Nội dung message"
+        rows="3"
+        style="width: calc(100% - 22px);"
+      ></textarea>
+      
+      <button onclick="sendMessage()" disabled class="action-btn">Send Message (POST /api/messages)</button>
+    </div>
+
+    <!-- Logs -->
+    <div class="section">
+      <h3>📝 Logs</h3>
+      <button onclick="clearLogs()">Clear Logs</button>
+      <div id="logs"></div>
+    </div>
+  </div>
+
+  <script>
+    let socket = null;
+    const logsDiv = document.getElementById('logs');
+    const statusDiv = document.getElementById('status');
+    const connectBtn = document.getElementById('connectBtn');
+    const disconnectBtn = document.getElementById('disconnectBtn');
+    const actionBtns = document.querySelectorAll('.action-btn');
+
+    function log(message, type = 'info') {
+      const timestamp = new Date().toLocaleTimeString();
+      const colors = {
+        info: '#00ff00',
+        error: '#ff4444',
+        success: '#00ff00',
+        warning: '#ffaa00'
+      };
+      
+      logsDiv.innerHTML += `<span style="color: ${colors[type]}">[${timestamp}] ${message}</span>\n`;
+      logsDiv.scrollTop = logsDiv.scrollHeight;
+    }
+
+    function updateStatus(connected) {
+      statusDiv.className = connected ? 'status connected' : 'status disconnected';
+      connectBtn.disabled = connected;
+      disconnectBtn.disabled = !connected;
+      actionBtns.forEach(btn => btn.disabled = !connected);
+    }
+
+    function connect() {
+      const token = document.getElementById('jwtToken').value.trim();
+      
+      if (!token) {
+        alert('Vui lòng nhập JWT token!');
+        return;
+      }
+
+      log('🔄 Đang kết nối WebSocket...', 'info');
+
+      socket = io('http://localhost:3000/chat', {
+        extraHeaders: {
+          Authorization: `Bearer ${token}`
+        },
+        transports: ['websocket', 'polling']
+      });
+
+      // Connection events
+      socket.on('connect', () => {
+        log('✅ Kết nối thành công! Socket ID: ' + socket.id, 'success');
+        updateStatus(true);
+      });
+
+      socket.on('disconnect', (reason) => {
+        log('❌ Ngắt kết nối. Lý do: ' + reason, 'error');
+        updateStatus(false);
+      });
+
+      socket.on('connect_error', (error) => {
+        log('❌ Lỗi kết nối: ' + error.message, 'error');
+        updateStatus(false);
+      });
+
+      // Chat events
+      socket.on('chatHistory', (data) => {
+        log('📜 CHAT HISTORY: Received ' + data.messages.length + ' messages', 'success');
+        data.messages.forEach((msg, index) => {
+          log(`  [${index + 1}] ${msg.sender_id}: ${msg.content} (${msg.status})`, 'info');
+        });
+      });
+
+      socket.on('newMessage', (message) => {
+        log('📨 NEW MESSAGE: ' + JSON.stringify(message, null, 2), 'success');
+      });
+
+      socket.on('messageSeen', (data) => {
+        log('✓✓ MESSAGE SEEN: ' + JSON.stringify(data, null, 2), 'info');
+      });
+
+      socket.on('chatUpdated', (chat) => {
+        log('🔄 CHAT UPDATED: ' + JSON.stringify(chat, null, 2), 'info');
+      });
+
+      socket.on('userTyping', (data) => {
+        log('⌨️ USER TYPING: User ' + data.user_id + ' in chat ' + data.chat_id, 'warning');
+      });
+
+      socket.on('userStopTyping', (data) => {
+        log('⏸️ USER STOP TYPING: User ' + data.user_id + ' in chat ' + data.chat_id, 'info');
+      });
+
+      socket.on('notification', (data) => {
+        log('🔔 NOTIFICATION: ' + JSON.stringify(data, null, 2), 'warning');
+      });
+    }
+
+    function disconnect() {
+      if (socket) {
+        socket.disconnect();
+        socket = null;
+        log('🔌 Đã ngắt kết nối', 'info');
+        updateStatus(false);
+      }
+    }
+
+    function joinChat() {
+      const chatId = document.getElementById('chatId').value.trim();
+      if (!chatId) {
+        alert('Vui lòng nhập Chat ID!');
+        return;
+      }
+      
+      socket.emit('joinChat', { chat_id: chatId });
+      log('➡️ Emit: joinChat { chat_id: "' + chatId + '" }', 'info');
+    }
+
+    function leaveChat() {
+      const chatId = document.getElementById('chatId').value.trim();
+      if (!chatId) {
+        alert('Vui lòng nhập Chat ID!');
+        return;
+      }
+      
+      socket.emit('leaveChat', { chat_id: chatId });
+      log('⬅️ Emit: leaveChat { chat_id: "' + chatId + '" }', 'info');
+    }
+
+    function sendTyping() {
+      const chatId = document.getElementById('chatId').value.trim();
+      const userId = document.getElementById('userId').value.trim();
+      
+      if (!chatId || !userId) {
+        alert('Vui lòng nhập Chat ID và User ID!');
+        return;
+      }
+      
+      socket.emit('typing', { chat_id: chatId, user_id: userId });
+      log('⌨️ Emit: typing { chat_id: "' + chatId + '", user_id: "' + userId + '" }', 'warning');
+    }
+
+    function stopTyping() {
+      const chatId = document.getElementById('chatId').value.trim();
+      const userId = document.getElementById('userId').value.trim();
+      
+      if (!chatId || !userId) {
+        alert('Vui lòng nhập Chat ID và User ID!');
+        return;
+      }
+      
+      socket.emit('stopTyping', { chat_id: chatId, user_id: userId });
+      log('⏸️ Emit: stopTyping { chat_id: "' + chatId + '", user_id: "' + userId + '" }', 'info');
+    }
+
+    async function sendMessage() {
+      const token = document.getElementById('jwtToken').value.trim();
+      const chatId = document.getElementById('chatId').value.trim();
+      const userId = document.getElementById('userId').value.trim();
+      const content = document.getElementById('messageContent').value.trim();
+      
+      if (!chatId || !userId || !content) {
+        alert('Vui lòng nhập đầy đủ Chat ID, User ID và nội dung message!');
+        return;
+      }
+
+      try {
+        log('📤 Đang gửi message qua REST API...', 'info');
+        
+        const response = await fetch('http://localhost:3000/api/messages', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            chat_id: chatId,
+            sender_id: userId,
+            content: content,
+            attachments: []
+          })
+        });
+
+        const data = await response.json();
+        
+        if (response.ok) {
+          log('✅ Message sent successfully: ' + JSON.stringify(data, null, 2), 'success');
+          document.getElementById('messageContent').value = '';
+        } else {
+          log('❌ Error sending message: ' + JSON.stringify(data, null, 2), 'error');
+        }
+      } catch (error) {
+        log('❌ Network error: ' + error.message, 'error');
+      }
+    }
+
+    function clearLogs() {
+      logsDiv.innerHTML = '';
+    }
+
+    async function createTestChat() {
+      const token = document.getElementById('jwtToken').value.trim();
+      const user1Id = document.getElementById('user1Id').value.trim();
+      const user2Id = document.getElementById('user2Id').value.trim();
+      
+      if (!token || !user1Id || !user2Id) {
+        alert('Vui lòng nhập JWT token và cả 2 User IDs!');
+        return;
+      }
+
+      try {
+        log('📤 Đang tạo test chat...', 'info');
+        
+        const response = await fetch('http://localhost:3000/api/chats/private', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            user1_id: user1Id,
+            user2_id: user2Id
+          })
+        });
+
+        const data = await response.json();
+        
+        if (response.ok) {
+          const chatId = data.data._id;
+          document.getElementById('chatId').value = chatId;
+          document.getElementById('userId').value = user1Id;
+          
+          log('✅ Test chat created successfully!', 'success');
+          log('Chat ID: ' + chatId, 'success');
+          log('💡 Bây giờ click "Join Chat" để bắt đầu test!', 'warning');
+        } else {
+          log('❌ Error creating chat: ' + JSON.stringify(data, null, 2), 'error');
+        }
+      } catch (error) {
+        log('❌ Network error: ' + error.message, 'error');
+      }
+    }
+
+    async function cleanupTestData() {
+      const token = document.getElementById('jwtToken').value.trim();
+      
+      if (!token) {
+        alert('Vui lòng nhập JWT token!');
+        return;
+      }
+
+      if (!confirm('⚠️ Xóa TẤT CẢ test chats và messages của bạn?\n\nLưu ý: Không thể khôi phục!')) {
+        return;
+      }
+
+      try {
+        log('🧹 Đang dọn dẹp test data...', 'warning');
+        
+        const response = await fetch('http://localhost:3000/api/chats/test/cleanup', {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        const data = await response.json();
+        
+        if (response.ok) {
+          log('✅ Cleanup successful: ' + JSON.stringify(data, null, 2), 'success');
+          log('💡 Database đã sạch, có thể test lại từ đầu!', 'success');
+          
+          // Clear inputs
+          document.getElementById('chatId').value = '';
+          document.getElementById('userId').value = '';
+          document.getElementById('messageContent').value = '';
+        } else {
+          log('❌ Error cleaning up: ' + JSON.stringify(data, null, 2), 'error');
+        }
+      } catch (error) {
+        log('❌ Network error: ' + error.message, 'error');
+      }
+    }
+
+    async function createPrivateChat() {
+      const token = document.getElementById('jwtToken').value.trim();
+      const user1Id = document.getElementById('user1Id').value.trim();
+      const user2Id = document.getElementById('user2Id').value.trim();
+      
+      if (!token) {
+        alert('Vui lòng nhập JWT token và Connect trước!');
+        return;
+      }
+      
+      if (!user1Id || !user2Id) {
+        alert('Vui lòng nhập cả 2 User IDs!');
+        return;
+      }
+
+      try {
+        log('📤 Đang tạo private chat giữa User 1 và User 2...', 'info');
+        
+        const response = await fetch('http://localhost:3000/api/chats/private', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            user1_id: user1Id,
+            user2_id: user2Id
+          })
+        });
+
+        const data = await response.json();
+        
+        if (response.ok) {
+          // Backend trả về double nested: data.data.data._id (do TransformInterceptor)
+          const chatId = data.data?.data?._id || data.data?._id || data._id;
+          
+          if (!chatId) {
+            log('⚠️ Không tìm thấy Chat ID trong response!', 'error');
+            log('Response: ' + JSON.stringify(data, null, 2), 'error');
+            return;
+          }
+          
+          // Tự động điền vào ô Chat ID và User ID cho User 1
+          document.getElementById('chatId').value = chatId;
+          document.getElementById('userId').value = user1Id;
+          
+          log('✅ Chat created successfully!', 'success');
+          log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'info');
+          log('📋 CHAT ID: ' + chatId, 'success');
+          log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'info');
+          log('', 'info');
+          log('👉 USER 1 (bạn): Click "Join Chat" bên dưới ngay!', 'warning');
+          log('', 'info');
+          log('👉 USER 2: Copy Chat ID này và làm theo:', 'warning');
+          log('   1. Paste Chat ID: ' + chatId, 'warning');
+          log('   2. Nhập User 2 ID vào ô "Your User ID"', 'warning');
+          log('   3. Click "Join Chat"', 'warning');
+          log('', 'info');
+          log('🎉 Sau đó cả 2 users có thể chat real-time!', 'success');
+        } else {
+          log('❌ Error creating chat: ' + JSON.stringify(data, null, 2), 'error');
+        }
+      } catch (error) {
+        log('❌ Network error: ' + error.message, 'error');
+      }
+    }
+
+    // Initialize
+    updateStatus(false);
+    
+    // Clear inputs khi load trang
+    document.getElementById('chatId').value = '';
+    document.getElementById('userId').value = '';
+    document.getElementById('user1Id').value = '';
+    document.getElementById('user2Id').value = '';
+    
+    log('🚀 Test Chat WebSocket ready!', 'success');
+    log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'info');
+    log('📖 USER 1: Connect → Nhập 2 User IDs → Create Chat', 'info');
+    log('📖 USER 2: Connect → Paste Chat ID từ User 1 → Join', 'info');
+  </script>
+</body>
+</html>
