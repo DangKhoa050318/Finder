@@ -8,8 +8,13 @@ export enum NotificationType {
   GROUP_INVITE = 'group_invite',
   GROUP_MEMBER_JOINED = 'group_member_joined',
   GROUP_MEMBER_LEFT = 'group_member_left',
+  SLOT_REMINDER = 'slot_reminder',
+  SLOT_CREATED = 'slot_created',
+  SLOT_UPDATED = 'slot_updated',
+  SLOT_CANCELLED = 'slot_cancelled',
   REMINDER = 'reminder',
   NEWS = 'news',
+  MESSAGE = 'message',
   SYSTEM = 'system',
 }
 
@@ -51,12 +56,6 @@ export class Notification extends Document {
   // Metadata linh hoạt để lưu dữ liệu bổ sung
   @Prop({ type: Object })
   metadata?: Record<string, any>;
-
-  @Prop({ default: Date.now, index: true })
-  createdAt: Date;
-
-  @Prop({ default: Date.now })
-  updatedAt: Date;
 }
 
 export const NotificationSchema = SchemaFactory.createForClass(Notification);

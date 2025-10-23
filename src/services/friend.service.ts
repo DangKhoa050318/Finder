@@ -21,6 +21,7 @@ import {
 import { Block, BlockDocument } from '../models/block.schema';
 import { ChatService } from './chat.service';
 import { BlockService } from './block.service';
+import { NotificationService } from './notification.service';
 
 @Injectable()
 export class FriendService {
@@ -39,6 +40,7 @@ export class FriendService {
     private chatService: ChatService,
     @Inject(forwardRef(() => BlockService))
     private blockService: BlockService,
+    private notificationService: NotificationService,
   ) {}
 
   // Send friend request
@@ -89,7 +91,25 @@ export class FriendService {
       status: FriendRequestStatus.Pending,
     });
 
-    return friendRequest.save();
+    const savedRequest = await friendRequest.save();
+
+    // Send notification to requestee
+    try {
+      const requester = await this.userModel.findById(requesterId);
+      if (requester) {
+        await this.notificationService.sendFriendRequestNotification(
+          requesteeId,
+          requester.full_name,
+          requesterId,
+          requester.avatar,
+        );
+      }
+    } catch (error) {
+      // Log error but don't fail the request
+      console.error('Failed to send friend request notification:', error);
+    }
+
+    return savedRequest;
   }
 
   // Accept friend request
@@ -143,6 +163,24 @@ export class FriendService {
     } catch (error) {
       // Log error but don't fail the friend acceptance
       console.error('Failed to create private chat:', error);
+    }
+
+    // Send notification to requester
+    try {
+      const accepter = await this.userModel.findById(userId);
+      if (accepter) {
+        await this.notificationService.sendFriendRequestAcceptedNotification(
+          requesterId,
+          accepter.full_name,
+          userId,
+          accepter.avatar,
+        );
+      }
+    } catch (error) {
+      console.error(
+        'Failed to send friend request accepted notification:',
+        error,
+      );
     }
 
     return { request, friendship };
@@ -226,16 +264,18 @@ export class FriendService {
       .populate('user2_id', 'full_name email avatar');
 
     // Map to return the other user (not the current user)
-    return friendships.map((friendship) => {
+    const results: any[] = [];
+    for (const friendship of friendships) {
       const friend =
         friendship.user1_id._id.toString() === userId
           ? friendship.user2_id
           : friendship.user1_id;
-      return {
+      results.push({
         ...friendship.toObject(),
         friend,
-      };
-    });
+      });
+    }
+    return results;
   }
 
   // Unfriend

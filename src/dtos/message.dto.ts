@@ -40,7 +40,10 @@ export class SendMessageDto {
     description: 'Danh sách file đính kèm (URLs)',
     type: [String],
     required: false,
-    example: ['https://example.com/file1.pdf', 'https://example.com/image1.jpg'],
+    example: [
+      'https://example.com/file1.pdf',
+      'https://example.com/image1.jpg',
+    ],
   })
   @IsOptional()
   @IsArray({ message: 'attachments phải là array' })
@@ -58,7 +61,7 @@ export class GetMessagesQueryDto {
   chat_id: string;
 
   @ApiProperty({
-    description: 'Số lượng messages',
+    description: 'Số lượng messages muốn lấy',
     example: 50,
     required: false,
     default: 50,
@@ -67,13 +70,14 @@ export class GetMessagesQueryDto {
   limit?: number;
 
   @ApiProperty({
-    description: 'Bỏ qua n messages đầu tiên',
-    example: 0,
+    description:
+      'ID message để lấy những messages cũ hơn (cursor-based pagination)',
+    example: '507f1f77bcf86cd799439011',
     required: false,
-    default: 0,
   })
   @IsOptional()
-  skip?: number;
+  @IsMongoId({ message: 'before_id phải là ObjectId hợp lệ' })
+  before_id?: string;
 }
 
 export class MarkAsSeenDto {
@@ -123,7 +127,7 @@ export class MessageResponseDto {
     description: 'Ngày tạo',
     example: '2025-10-17T00:00:00.000Z',
   })
-  created_at: Date;
+  createdAt: Date;
 
   @ApiProperty({
     description: 'Trạng thái',

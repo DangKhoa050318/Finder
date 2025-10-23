@@ -37,13 +37,6 @@ export class Message {
   content: string;
 
   @ApiProperty({
-    description: 'Ngày tạo tin nhắn',
-    example: '2025-10-17T00:00:00.000Z',
-  })
-  @Prop({ type: Date, default: Date.now })
-  created_at: Date;
-
-  @ApiProperty({
     description: 'Trạng thái tin nhắn',
     enum: MessageStatus,
     example: MessageStatus.Sent,
@@ -59,4 +52,4 @@ export class Message {
 export const MessageSchema = SchemaFactory.createForClass(Message);
 
 // Index để query messages theo chat và sort theo thời gian
-MessageSchema.index({ chat_id: 1, created_at: -1 });
+MessageSchema.index({ chat_id: 1, createdAt: -1 });

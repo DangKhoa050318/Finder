@@ -346,6 +346,7 @@ async function seed() {
           `Buổi học buổi sáng về ${groups[day % groups.length].group_name}`,
           morningStart,
           morningEnd,
+        
         );
         slotCount++;
       }

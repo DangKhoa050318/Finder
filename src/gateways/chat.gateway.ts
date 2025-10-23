@@ -19,9 +19,7 @@ import { MessageService } from '../services/message.service';
   namespace: '/chat', // Namespace riêng cho chat
   transports: ['websocket', 'polling'],
 })
-export class ChatGateway
-  implements OnGatewayConnection, OnGatewayDisconnect
-{
+export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server: Server;
 
@@ -67,16 +65,17 @@ export class ChatGateway
     try {
       const messages = await this.messageService.getMessages({
         chat_id: chatId,
-        limit: 50, // Load 50 messages gần nhất
+        limit: 20, // Load 50 messages gần nhất
       });
-      
-      // Gửi messages history về cho client vừa join
+
       client.emit('chatHistory', {
         chatId,
         messages: messages,
       });
-      
-      this.logger.log(`📜 Sent ${messages.length} historical messages to socket ${client.id}`);
+
+      this.logger.log(
+        `📜 Sent ${messages.length} historical messages to socket ${client.id}`,
+      );
     } catch (error) {
       this.logger.error(`❌ Error fetching chat history: ${error.message}`);
     }

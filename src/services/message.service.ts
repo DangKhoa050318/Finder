@@ -2,15 +2,21 @@ import {
   Injectable,
   NotFoundException,
   ForbiddenException,
+  Get,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
-import { Message, MessageDocument, MessageStatus } from '../models/message.schema';
+import {
+  Message,
+  MessageDocument,
+  MessageStatus,
+} from '../models/message.schema';
 import {
   ChatParticipant,
   ChatParticipantDocument,
 } from '../models/chat-participant.schema';
 import { SendMessageDto, GetMessagesQueryDto } from '../dtos/message.dto';
+import { ApiOperation } from '@nestjs/swagger';
 
 @Injectable()
 export class MessageService {
@@ -44,23 +50,33 @@ export class MessageService {
       content: dto.content,
       status: MessageStatus.Sent,
     });
+    await message.populate('sender_id', 'full_name avatar email');
 
     return message;
   }
 
   /**
-   * Lấy messages của chat với phân trang
+   * Lấy messages của chat với cursor-based pagination
+   * Nếu có before_id, lấy những messages cũ hơn (createdAt < message với before_id)
    */
   async getMessages(dto: GetMessagesQueryDto): Promise<MessageDocument[]> {
     const chatObjectId = new Types.ObjectId(dto.chat_id);
     const limit = dto.limit || 50;
-    const skip = dto.skip || 0;
+
+    let query: any = { chat_id: chatObjectId };
+
+    // Nếu có before_id (cursor), lấy những messages cũ hơn
+    if (dto.before_id && Types.ObjectId.isValid(dto.before_id)) {
+      const beforeMessage = await this.messageModel.findById(dto.before_id);
+      if (beforeMessage) {
+        query.createdAt = { $lt: (beforeMessage as any).createdAt };
+      }
+    }
 
     const messages = await this.messageModel
-      .find({ chat_id: chatObjectId })
-      .sort({ created_at: -1 }) // Mới nhất trước
+      .find(query)
+      .sort({ createdAt: -1 }) // Mới nhất trước
       .limit(limit)
-      .skip(skip)
       .populate('sender_id', 'full_name avatar email');
 
     // Reverse để messages cũ nhất trước (chronological order)

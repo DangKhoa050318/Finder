@@ -50,13 +50,6 @@ export class Slot {
   created_by: Types.ObjectId;
 
   @ApiProperty({
-    description: 'Ngày tạo slot',
-    example: '2025-10-17T00:00:00.000Z',
-  })
-  @Prop({ type: Date, default: Date.now })
-  created_at: Date;
-
-  @ApiProperty({
     description: 'Loại slot',
     enum: SlotType,
     example: SlotType.Group,

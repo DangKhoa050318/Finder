@@ -15,6 +15,7 @@ import {
   GroupMemberRole,
 } from '../models/group-member.schema';
 import { ChatService } from './chat.service';
+import { NotificationService } from './notification.service';
 
 @Injectable()
 export class GroupService {
@@ -25,6 +26,7 @@ export class GroupService {
     private groupMemberModel: Model<GroupMemberDocument>,
     @Inject(forwardRef(() => ChatService))
     private chatService: ChatService,
+    private notificationService: NotificationService,
   ) {}
 
   // Create group
@@ -34,7 +36,7 @@ export class GroupService {
     description: string = '',
     visibility: GroupVisibility = GroupVisibility.Public,
     maxMember: number = 50,
-  ): Promise<GroupDocument> {
+  ): Promise<any> {
     const group = new this.groupModel({
       group_name: groupName,
       description,
@@ -157,28 +159,26 @@ export class GroupService {
       ];
     }
 
-    const [groups, total] = await Promise.all([
-      this.groupModel
-        .find(filter)
-        .populate('leader_id', 'full_name email avatar')
-        .sort({ created_at: -1 })
-        .skip(skip)
-        .limit(limit),
-      this.groupModel.countDocuments(filter),
-    ]);
+    const groups = await this.groupModel
+      .find(filter)
+      .populate('leader_id', 'full_name email avatar')
+      .sort({ created_at: -1 })
+      .skip(skip)
+      .limit(limit);
+
+    const total = await this.groupModel.countDocuments(filter);
 
     // Add member count to each group
-    const groupsWithMembers = await Promise.all(
-      groups.map(async (group) => {
-        const memberCount = await this.groupMemberModel.countDocuments({
-          group_id: group._id,
-        });
-        return {
-          ...group.toObject(),
-          memberCount,
-        };
-      }),
-    );
+    const groupsWithMembers: any[] = [];
+    for (const group of groups) {
+      const memberCount = await this.groupMemberModel.countDocuments({
+        group_id: group._id,
+      });
+      groupsWithMembers.push({
+        ...group.toObject(),
+        memberCount,
+      });
+    }
 
     return {
       data: groupsWithMembers,
@@ -198,7 +198,7 @@ export class GroupService {
       .find({ user_id: userObjectId })
       .select('group_id');
 
-    const groupIds = memberships.map((m) => m.group_id);
+    const groupIds: Types.ObjectId[] = memberships.map((m) => m.group_id);
 
     // Get group details with member count
     const groups = await this.groupModel
@@ -252,6 +252,35 @@ export class GroupService {
     }
 
     await this.addMember(groupId, userId, GroupMemberRole.Member);
+
+    // Send notification to all group members (except the new member)
+    try {
+      const members = await this.groupMemberModel
+        .find({ group_id: groupObjectId })
+        .populate('user_id', 'full_name');
+
+      const newMember = await this.groupMemberModel
+        .findOne({ group_id: groupObjectId, user_id: userObjectId })
+        .populate('user_id', 'full_name');
+
+      if (newMember && newMember.user_id) {
+        const memberUserIds = members
+          .filter((m) => m.user_id._id.toString() !== userId)
+          .map((m) => m.user_id._id.toString());
+
+        if (memberUserIds.length > 0) {
+          await this.notificationService.sendGroupMemberJoinedNotification(
+            memberUserIds,
+            group.group_name,
+            (newMember.user_id as any).full_name,
+            groupId,
+            group.avatar,
+          );
+        }
+      }
+    } catch (error) {
+      console.error('Failed to send group join notification:', error);
+    }
 
     // Return updated group with memberCount
     return this.getGroupById(groupId);

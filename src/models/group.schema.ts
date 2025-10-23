@@ -29,13 +29,6 @@ export class Group {
   description: string;
 
   @ApiProperty({
-    description: 'Ngày tạo nhóm',
-    example: '2025-10-17T00:00:00.000Z',
-  })
-  @Prop({ type: Date, default: Date.now })
-  created_at: Date;
-
-  @ApiProperty({
     description: 'ID trưởng nhóm',
     type: String,
   })

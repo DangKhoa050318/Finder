@@ -13,6 +13,8 @@ import {
 } from '../models/chat-participant.schema';
 import { Group, GroupDocument } from '../models/group.schema';
 import { Message, MessageDocument } from '../models/message.schema';
+import { User, UserDocument } from '../models/user.schema';
+import { UserChatDetailDto } from '../dtos/chat.dto';
 
 @Injectable()
 export class ChatService {
@@ -22,6 +24,7 @@ export class ChatService {
     private chatParticipantModel: Model<ChatParticipantDocument>,
     @InjectModel(Group.name) private groupModel: Model<GroupDocument>,
     @InjectModel(Message.name) private messageModel: Model<MessageDocument>,
+    @InjectModel('User') private userModel: Model<UserDocument>,
   ) {}
 
   /**
@@ -36,6 +39,24 @@ export class ChatService {
       throw new BadRequestException('Không thể tạo chat với chính mình');
     }
 
+    // Validate ObjectId format
+    if (
+      !Types.ObjectId.isValid(user1_id) ||
+      !Types.ObjectId.isValid(user2_id)
+    ) {
+      throw new BadRequestException('User ID không hợp lệ');
+    }
+
+    // Check users exist
+    const [user1, user2] = await Promise.all([
+      this.userModel.findById(user1_id).lean(),
+      this.userModel.findById(user2_id).lean(),
+    ]);
+
+    if (!user1 || !user2) {
+      throw new NotFoundException('Một hoặc cả hai user không tồn tại');
+    }
+
     const user1ObjectId = new Types.ObjectId(user1_id);
     const user2ObjectId = new Types.ObjectId(user2_id);
 
@@ -43,10 +64,12 @@ export class ChatService {
     const [user1Chats, user2Chats] = await Promise.all([
       this.chatParticipantModel
         .find({ user_id: user1ObjectId })
-        .select('chat_id'),
+        .select('chat_id')
+        .lean(),
       this.chatParticipantModel
         .find({ user_id: user2ObjectId })
-        .select('chat_id'),
+        .select('chat_id')
+        .lean(),
     ]);
 
     // Tìm chat_id chung
@@ -62,7 +85,7 @@ export class ChatService {
       if (chat && chat.chat_type === ChatType.Private) {
         // Kiểm tra chat này chỉ có 2 members
         const participantCount = await this.chatParticipantModel.countDocuments(
-          { chat_id: chat._id },
+          { chat_id: new Types.ObjectId(chatId) },
         );
         if (participantCount === 2) {
           return chat;
@@ -92,6 +115,23 @@ export class ChatService {
     group_id: string,
     member_ids: string[],
   ): Promise<ChatDocument> {
+    // Validate ObjectId format
+    if (!Types.ObjectId.isValid(group_id)) {
+      throw new BadRequestException('Group ID không hợp lệ');
+    }
+
+    if (!member_ids || member_ids.length === 0) {
+      throw new BadRequestException('Danh sách members không được để trống');
+    }
+
+    // Validate all member IDs
+    const invalidMemberIds = member_ids.filter(
+      (id) => !Types.ObjectId.isValid(id),
+    );
+    if (invalidMemberIds.length > 0) {
+      throw new BadRequestException('Một số member ID không hợp lệ');
+    }
+
     const groupObjectId = new Types.ObjectId(group_id);
 
     // Kiểm tra group tồn tại
@@ -107,6 +147,15 @@ export class ChatService {
     });
     if (existingChat) {
       throw new ConflictException('Nhóm này đã có chat');
+    }
+
+    // Validate all members exist
+    const members = await this.userModel.find({
+      _id: { $in: member_ids.map((id) => new Types.ObjectId(id)) },
+    });
+
+    if (members.length !== member_ids.length) {
+      throw new NotFoundException('Một số members không tồn tại');
     }
 
     // Tạo chat
@@ -127,44 +176,187 @@ export class ChatService {
 
   /**
    * Lấy danh sách chats của user
+   * Uses aggregation pipeline to avoid N+1 query problem
    */
   async getUserChats(
     user_id: string,
     chat_type?: ChatType,
-  ): Promise<ChatDocument[]> {
-    const userObjectId = new Types.ObjectId(user_id);
-
-    // Lấy chat_ids mà user tham gia
-    const participants = await this.chatParticipantModel
-      .find({ user_id: userObjectId })
-      .select('chat_id');
-
-    const chatIds = participants.map((p) => p.chat_id);
-
-    // Query chats
-    const query: any = { _id: { $in: chatIds } };
-    if (chat_type) {
-      query.chat_type = chat_type;
+  ): Promise<UserChatDetailDto[]> {
+    // Validate ObjectId format
+    if (!Types.ObjectId.isValid(user_id)) {
+      throw new BadRequestException('User ID không hợp lệ');
     }
 
-    const chats = await this.chatModel
-      .find(query)
-      .sort({ updated_at: -1 })
-      .populate('group_id', 'name avatar');
+    const userObjectId = new Types.ObjectId(user_id);
 
-    return chats;
+    // Use aggregation pipeline to get chats with all details in one query
+    const pipeline: any[] = [
+      {
+        $match: { user_id: userObjectId },
+      },
+      {
+        $lookup: {
+          from: 'chats',
+          localField: 'chat_id',
+          foreignField: '_id',
+          as: 'chat',
+        },
+      },
+      {
+        $unwind: '$chat',
+      },
+      ...(chat_type
+        ? [
+            {
+              $match: { 'chat.chat_type': chat_type },
+            },
+          ]
+        : []),
+      {
+        $sort: { 'chat.updatedAt': -1 },
+      },
+      {
+        $lookup: {
+          from: 'chatparticipants',
+          let: { chatId: '$chat._id' },
+          pipeline: [
+            {
+              $match: { $expr: { $eq: ['$chat_id', '$$chatId'] } },
+            },
+            {
+              $lookup: {
+                from: 'users',
+                localField: 'user_id',
+                foreignField: '_id',
+                as: 'user',
+              },
+            },
+            {
+              $unwind: { path: '$user', preserveNullAndEmptyArrays: true },
+            },
+            {
+              $project: {
+                _id: 1,
+                user_id: 1,
+                role: 1,
+                'user.full_name': 1,
+                'user.avatar': 1,
+                'user.email': 1,
+              },
+            },
+          ],
+          as: 'participants',
+        },
+      },
+      {
+        $lookup: {
+          from: 'messages',
+          localField: 'chat._id',
+          foreignField: 'chat_id',
+          as: 'lastMessageArray',
+          pipeline: [{ $sort: { createdAt: -1 } }, { $limit: 1 }],
+        },
+      },
+      {
+        $lookup: {
+          from: 'messages',
+          let: { chatId: '$chat._id' },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ['$chat_id', '$$chatId'] },
+                    { $ne: ['$sender_id', userObjectId] },
+                    { $ne: ['$status', 'read'] },
+                  ],
+                },
+              },
+            },
+            { $count: 'count' },
+          ],
+          as: 'unreadCountArray',
+        },
+      },
+      {
+        $project: {
+          _id: { $toString: '$chat._id' },
+          chat_type: '$chat.chat_type',
+          group_id: {
+            $cond: [
+              { $eq: ['$chat.group_id', null] },
+              null,
+              { $toString: '$chat.group_id' },
+            ],
+          },
+          createdAt: '$chat.createdAt',
+          updatedAt: '$chat.updatedAt',
+          participants: 1,
+          lastMessage: { $arrayElemAt: ['$lastMessageArray', 0] },
+          unreadCount: {
+            $cond: [
+              { $gt: [{ $size: '$unreadCountArray' }, 0] },
+              { $arrayElemAt: ['$unreadCountArray.count', 0] },
+              0,
+            ],
+          },
+        },
+      },
+      {
+        $addFields: {
+          otherUser: {
+            $cond: [
+              { $eq: ['$chat_type', ChatType.Private] },
+              {
+                $let: {
+                  vars: {
+                    otherParticipant: {
+                      $arrayElemAt: [
+                        {
+                          $filter: {
+                            input: '$participants',
+                            as: 'p',
+                            cond: {
+                              $ne: [{ $toString: '$$p.user_id' }, user_id],
+                            },
+                          },
+                        },
+                        0,
+                      ],
+                    },
+                  },
+                  in: '$$otherParticipant.user',
+                },
+              },
+              null,
+            ],
+          },
+        },
+      },
+    ];
+
+    const result = await this.chatParticipantModel.aggregate(pipeline).exec();
+
+    return result as UserChatDetailDto[];
   }
 
   /**
    * Lấy thông tin chat theo ID
    */
   async getChatById(chat_id: string): Promise<ChatDocument> {
+    // Validate ObjectId format
+    if (!Types.ObjectId.isValid(chat_id)) {
+      throw new BadRequestException('Chat ID không hợp lệ');
+    }
+
     const chat = await this.chatModel
       .findById(chat_id)
-      .populate('group_id', 'name avatar');
+      .populate('group_id', 'group_name avatar');
+
     if (!chat) {
       throw new NotFoundException('Chat không tồn tại');
     }
+
     return chat;
   }
 
@@ -172,29 +364,57 @@ export class ChatService {
    * Lấy members của chat
    */
   async getChatMembers(chat_id: string) {
+    // Validate ObjectId format
+    if (!Types.ObjectId.isValid(chat_id)) {
+      throw new BadRequestException('Chat ID không hợp lệ');
+    }
+
     const chatObjectId = new Types.ObjectId(chat_id);
+
+    // Check chat exists
+    const chat = await this.chatModel.findById(chatObjectId);
+    if (!chat) {
+      throw new NotFoundException('Chat không tồn tại');
+    }
+
     const participants = await this.chatParticipantModel
       .find({ chat_id: chatObjectId })
-      .populate('user_id', 'full_name avatar email');
-    return participants.map((p) => p.user_id);
+      .populate('user_id', 'full_name avatar email')
+      .lean();
+
+    return participants.map((p) => ({
+      _id: p._id,
+      user_id: p.user_id,
+      role: p.role,
+    }));
   }
 
   /**
    * Thêm member vào group chat
    */
   async addMemberToChat(chat_id: string, user_id: string) {
+    // Validate ObjectId format
+    if (!Types.ObjectId.isValid(chat_id) || !Types.ObjectId.isValid(user_id)) {
+      throw new BadRequestException('Chat ID hoặc User ID không hợp lệ');
+    }
+
     const chatObjectId = new Types.ObjectId(chat_id);
     const userObjectId = new Types.ObjectId(user_id);
+
+    // Check user exists
+    const user = await this.userModel.findById(userObjectId).lean();
+    if (!user) {
+      throw new NotFoundException('User không tồn tại');
+    }
 
     // Kiểm tra chat
     const chat = await this.chatModel.findById(chatObjectId);
     if (!chat) {
       throw new NotFoundException('Chat không tồn tại');
     }
+
     if (chat.chat_type !== ChatType.Group) {
-      throw new BadRequestException(
-        'Chỉ có thể thêm member vào group chat',
-      );
+      throw new BadRequestException('Chỉ có thể thêm member vào group chat');
     }
 
     // Kiểm tra đã là member chưa
@@ -202,25 +422,46 @@ export class ChatService {
       chat_id: chatObjectId,
       user_id: userObjectId,
     });
+
     if (existing) {
       throw new ConflictException('User đã là member của chat');
     }
 
     // Thêm participant
-    await this.chatParticipantModel.create({
+    const result = await this.chatParticipantModel.create({
       chat_id: chatObjectId,
       user_id: userObjectId,
     });
 
-    return { message: 'Đã thêm member vào chat thành công' };
+    return {
+      _id: result._id,
+      chat_id: result.chat_id,
+      user_id: result.user_id,
+      role: result.role,
+    };
   }
 
   /**
    * Xóa member khỏi group chat
    */
   async removeMemberFromChat(chat_id: string, user_id: string) {
+    // Validate ObjectId format
+    if (!Types.ObjectId.isValid(chat_id) || !Types.ObjectId.isValid(user_id)) {
+      throw new BadRequestException('Chat ID hoặc User ID không hợp lệ');
+    }
+
     const chatObjectId = new Types.ObjectId(chat_id);
     const userObjectId = new Types.ObjectId(user_id);
+
+    // Check chat exists and is group chat
+    const chat = await this.chatModel.findById(chatObjectId);
+    if (!chat) {
+      throw new NotFoundException('Chat không tồn tại');
+    }
+
+    if (chat.chat_type !== ChatType.Group) {
+      throw new BadRequestException('Chỉ có thể xóa member khỏi group chat');
+    }
 
     const result = await this.chatParticipantModel.deleteOne({
       chat_id: chatObjectId,
@@ -231,15 +472,9 @@ export class ChatService {
       throw new NotFoundException('User không phải member của chat');
     }
 
-    return { message: 'Đã xóa member khỏi chat thành công' };
-  }
-
-  /**
-   * Update thời gian updated_at của chat (khi có message mới)
-   */
-  async updateChatTimestamp(chat_id: string) {
-    await this.chatModel.findByIdAndUpdate(chat_id, {
-      updated_at: new Date(),
-    });
+    return {
+      message: 'Xóa member khỏi chat thành công',
+      deletedCount: result.deletedCount,
+    };
   }
 }

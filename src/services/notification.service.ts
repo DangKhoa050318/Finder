@@ -2,6 +2,8 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  forwardRef,
+  Inject,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
@@ -13,12 +15,15 @@ import {
   MarkAsReadDto,
   DeleteNotificationDto,
 } from '../dtos/notification.dto';
+import { NotificationGateway } from '../gateways/notification.gateway';
 
 @Injectable()
 export class NotificationService {
   constructor(
     @InjectModel(Notification.name)
     private notificationModel: Model<Notification>,
+    @Inject(forwardRef(() => NotificationGateway))
+    private notificationGateway: NotificationGateway,
   ) {}
 
   /**
@@ -39,7 +44,19 @@ export class NotificationService {
       isRead: false,
     });
 
-    return notification.save();
+    const savedNotification = await notification.save();
+
+    // Send real-time notification via WebSocket
+    try {
+      this.notificationGateway.sendNotificationToUser(
+        dto.user_id,
+        savedNotification.toJSON(),
+      );
+    } catch (error) {
+      console.error('Failed to send real-time notification:', error);
+    }
+
+    return savedNotification;
   }
 
   /**
@@ -160,6 +177,14 @@ export class NotificationService {
       throw new BadRequestException('Không tìm thấy thông báo để cập nhật');
     }
 
+    // Update unread count via WebSocket
+    try {
+      const unreadCount = await this.getUnreadCount(userId);
+      this.notificationGateway.sendUnreadCountUpdate(userId, unreadCount);
+    } catch (error) {
+      console.error('Failed to send unread count update:', error);
+    }
+
     return {
       message: 'Đánh dấu đã đọc thành công',
       updated: result.modifiedCount,
@@ -180,6 +205,13 @@ export class NotificationService {
         updatedAt: new Date(),
       },
     );
+
+    // Update unread count via WebSocket
+    try {
+      this.notificationGateway.sendUnreadCountUpdate(userId, 0);
+    } catch (error) {
+      console.error('Failed to send unread count update:', error);
+    }
 
     return {
       message: 'Đánh dấu tất cả thông báo đã đọc',
@@ -322,6 +354,72 @@ export class NotificationService {
       relatedId: newsId,
       actionUrl: `/dashboard/news/${newsId}`,
       actionLabel: 'Xem tin tức',
+    });
+  }
+
+  /**
+   * Send slot reminder notification
+   */
+  async sendSlotReminderNotification(
+    userId: string,
+    slotTitle: string,
+    slotId: string,
+    startTime: Date,
+  ): Promise<Notification> {
+    const timeUntil = Math.floor(
+      (startTime.getTime() - Date.now()) / (1000 * 60),
+    );
+    return this.createNotification({
+      user_id: userId,
+      type: NotificationType.SLOT_REMINDER,
+      title: `Nhắc nhở: ${slotTitle}`,
+      description: `Lịch học sẽ bắt đầu sau ${timeUntil} phút`,
+      relatedId: slotId,
+      actionUrl: `/dashboard/slots/${slotId}`,
+      actionLabel: 'Xem chi tiết',
+    });
+  }
+
+  /**
+   * Send slot created notification to participants
+   */
+  async sendSlotCreatedNotification(
+    userIds: string[],
+    slotTitle: string,
+    slotId: string,
+    creatorName: string,
+  ): Promise<void> {
+    const notifications = userIds.map((userId) =>
+      this.createNotification({
+        user_id: userId,
+        type: NotificationType.SLOT_CREATED,
+        title: `${creatorName} đã tạo lịch học: ${slotTitle}`,
+        relatedId: slotId,
+        actionUrl: `/dashboard/slots/${slotId}`,
+        actionLabel: 'Xem lịch học',
+      }),
+    );
+    await Promise.all(notifications);
+  }
+
+  /**
+   * Send message notification
+   */
+  async sendMessageNotification(
+    userId: string,
+    senderName: string,
+    message: string,
+    chatId: string,
+  ): Promise<Notification> {
+    return this.createNotification({
+      user_id: userId,
+      type: NotificationType.MESSAGE,
+      title: `${senderName} đã gửi tin nhắn`,
+      description:
+        message.length > 50 ? message.substring(0, 50) + '...' : message,
+      relatedId: chatId,
+      actionUrl: `/dashboard/messages/${chatId}`,
+      actionLabel: 'Xem tin nhắn',
     });
   }
 }

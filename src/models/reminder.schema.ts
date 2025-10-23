@@ -42,13 +42,6 @@ export class Reminder {
   remind_at: Date;
 
   @ApiProperty({
-    description: 'Ngày tạo reminder',
-    example: '2025-10-17T00:00:00.000Z',
-  })
-  @Prop({ type: Date, default: Date.now })
-  created_at: Date;
-
-  @ApiProperty({
     description: 'Phương thức thông báo',
     enum: ReminderMethod,
     example: ReminderMethod.InApp,

@@ -9,6 +9,18 @@ import {
 } from 'class-validator';
 import { ChatType } from '../models/chat.schema';
 
+export interface UserChatDetailDto {
+  _id: string;
+  chat_type: ChatType;
+  group_id: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+  participants: any[];
+  otherUser: any | null;
+  lastMessage: any | null;
+  unreadCount: number;
+}
+
 export class CreatePrivateChatDto {
   @ApiProperty({
     description: 'ID user thứ nhất',
@@ -72,24 +84,43 @@ export class ChatResponseDto {
     description: 'Ngày tạo',
     example: '2025-10-17T00:00:00.000Z',
   })
-  created_at: Date;
+  createdAt: Date;
 
   @ApiProperty({
     description: 'Ngày cập nhật',
     example: '2025-10-17T00:00:00.000Z',
   })
-  updated_at: Date;
+  updatedAt: Date;
+
+  @ApiProperty({
+    description: 'Người dùng khác (cho private chat)',
+    nullable: true,
+  })
+  otherUser?: {
+    _id: string;
+    full_name: string;
+    avatar?: string;
+    email: string;
+  };
+
+  @ApiProperty({
+    description: 'Tin nhắn cuối cùng',
+    nullable: true,
+  })
+  lastMessage?: {
+    _id: string;
+    content: string;
+    createdAt: Date;
+  };
+
+  @ApiProperty({
+    description: 'Số tin nhắn chưa đọc',
+    example: 3,
+  })
+  unreadCount: number;
 }
 
 export class GetUserChatsQueryDto {
-  @ApiProperty({
-    description: 'ID user',
-    example: '507f1f77bcf86cd799439011',
-  })
-  @IsMongoId({ message: 'user_id phải là ObjectId hợp lệ' })
-  @IsNotEmpty({ message: 'user_id không được để trống' })
-  user_id: string;
-
   @ApiProperty({
     description: 'Loại chat',
     enum: ChatType,

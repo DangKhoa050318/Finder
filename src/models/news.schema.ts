@@ -29,16 +29,8 @@ export class News {
   })
   @Prop({ required: true, type: String })
   content: string;
-
-  @ApiProperty({
-    description: 'Ngày tạo',
-    example: '2025-10-17T00:00:00.000Z',
-  })
-  @Prop({ type: Date, default: Date.now })
-  created_at: Date;
 }
 
 export const NewsSchema = SchemaFactory.createForClass(News);
 
-
-NewsSchema.index({ created_at: -1 });
+NewsSchema.index({ createdAt: -1 });

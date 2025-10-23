@@ -211,7 +211,7 @@ export class SlotService {
 
     // Get slots created by user
     const createdSlots = await this.slotModel
-      .find({ ...filter, created_by: userId })
+      .find({ ...filter, created_by: new Types.ObjectId(userId) })
       .populate('created_by', 'full_name email avatar')
       .sort({ start_time: -1 });
 
@@ -220,7 +220,10 @@ export class SlotService {
       $or: [{ user1_id: userId }, { user2_id: userId }],
     });
 
-    const privateSlotIds = privateSlotRecords.map((r) => r.slot_id);
+    const privateSlotIds: Types.ObjectId[] = [];
+    for (const record of privateSlotRecords) {
+      privateSlotIds.push(record.slot_id);
+    }
     const privateSlots = await this.slotModel
       .find({ _id: { $in: privateSlotIds }, created_by: { $ne: userId } })
       .populate('created_by', 'full_name email avatar')
@@ -253,7 +256,10 @@ export class SlotService {
       $or: [{ user1_id: userId }, { user2_id: userId }],
     });
 
-    const privateSlotIds = privateSlotRecords.map((r) => r.slot_id);
+    const privateSlotIds: Types.ObjectId[] = [];
+    for (const record of privateSlotRecords) {
+      privateSlotIds.push(record.slot_id);
+    }
     const privateSlots = await this.slotModel
       .find({
         _id: { $in: privateSlotIds },
@@ -271,7 +277,10 @@ export class SlotService {
   // Get slots by group
   async getGroupSlots(groupId: string) {
     const slotGroups = await this.slotGroupModel.find({ group_id: groupId });
-    const slotIds = slotGroups.map((sg) => sg.slot_id);
+    const slotIds: Types.ObjectId[] = [];
+    for (const sg of slotGroups) {
+      slotIds.push(sg.slot_id);
+    }
 
     return this.slotModel
       .find({ _id: { $in: slotIds } })
