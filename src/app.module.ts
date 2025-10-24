@@ -94,6 +94,7 @@ import { NotificationController } from './controllers/notification.controller';
       useFactory: (cfg: ConfigService) => {
         return {
           uri: cfg.env.mongoUri,
+          autoIndex: false, // Disable auto index sync to prevent overwriting sparse indexes
         };
       },
       inject: [ConfigService],

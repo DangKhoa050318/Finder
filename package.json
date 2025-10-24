@@ -20,7 +20,9 @@
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "seed": "ts-node -r tsconfig-paths/register src/database/seed.ts",
     "db:clear": "ts-node -r tsconfig-paths/register src/database/clear.ts",
-    "seed:refresh": "npm run db:clear && npm run seed"
+    "seed:refresh": "npm run db:clear && npm run seed",
+    "migration:run": "ts-node -r tsconfig-paths/register src/database/run-migration.ts",
+    "migration:rollback": "ts-node -r tsconfig-paths/register src/database/run-migration.ts --rollback"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",

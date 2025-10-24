@@ -62,6 +62,6 @@ export class Attendance {
 export const AttendanceSchema = SchemaFactory.createForClass(Attendance);
 
 // Compound index để đảm bảo user không đăng ký slot 2 lần
-AttendanceSchema.index({ user_id: 1, slot_id: 1 }, { unique: true });
+AttendanceSchema.index({ user_id: 1, slot_id: 1 }, { unique: true, sparse: true });
 // Index để query attendances theo slot
 AttendanceSchema.index({ slot_id: 1 });

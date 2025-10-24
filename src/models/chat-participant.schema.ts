@@ -45,7 +45,7 @@ export class ChatParticipant {
 export const ChatParticipantSchema = SchemaFactory.createForClass(ChatParticipant);
 
 // Compound index để đảm bảo user không join chat 2 lần
-ChatParticipantSchema.index({ chat_id: 1, user_id: 1 }, { unique: true });
+ChatParticipantSchema.index({ chat_id: 1, user_id: 1 }, { unique: true, sparse: true });
 // Index để query participants của chat
 ChatParticipantSchema.index({ chat_id: 1 });
 // Index để query chats của user - sparse để cho phép null trong dev

@@ -46,12 +46,27 @@ export class AuthService {
   }
 
   async register(data: RegisterDto) {
+    console.log('\n🔵 [AUTH] Starting registration for:', data.email);
     const existed = await this.userService.findByEmail(data.email);
-    if (existed) throw new ConflictException('Email đã tồn tại');
-    await this.userService.create(data);
-    return {
-      message: 'Đăng ký thành công',
-    };
+    if (existed) {
+      console.log('🔴 [AUTH] Email already exists');
+      throw new ConflictException('Email đã tồn tại');
+    }
+    console.log('🟢 [AUTH] Email is available, creating user...');
+    try {
+      const user = await this.userService.create(data);
+      console.log('✅ [AUTH] User created successfully:', user._id);
+      return {
+        message: 'Đăng ký thành công',
+      };
+    } catch (error) {
+      console.log('❌ [AUTH] Error during user creation:');
+      console.log('Error name:', error.name);
+      console.log('Error code:', error.code);
+      console.log('Error message:', error.message);
+      if (error.keyValue) console.log('Error keyValue:', error.keyValue);
+      throw error;
+    }
   }
 
   async getMe(email: string) {

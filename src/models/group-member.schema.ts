@@ -51,6 +51,6 @@ export class GroupMember {
 export const GroupMemberSchema = SchemaFactory.createForClass(GroupMember);
 
 // Đảm bảo user không join nhóm 2 lần
-GroupMemberSchema.index({ group_id: 1, user_id: 1 }, { unique: true });
+GroupMemberSchema.index({ group_id: 1, user_id: 1 }, { unique: true, sparse: true });
 // Index để query members của group
 GroupMemberSchema.index({ group_id: 1 });

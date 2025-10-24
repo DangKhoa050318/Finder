@@ -20,9 +20,12 @@ export class MongoExceptionFilter implements ExceptionFilter {
     if (exception.kind == 'ObjectId') message = 'Không tìm thấy';
     switch (exception.code) {
       case 11000:
-        console.log('=== MONGODB DUPLICATE KEY ERROR ===');
-        console.log('exception.keyValue:', exception.keyValue);
-        console.log('exception.keyPattern:', exception.keyPattern);
+        console.log('\n=== MONGODB DUPLICATE KEY ERROR ===');
+        console.log('Collection:', exception.message.match(/collection: (\w+)/)?.[1]);
+        console.log('keyValue:', JSON.stringify(exception.keyValue, null, 2));
+        console.log('keyPattern:', JSON.stringify(exception.keyPattern, null, 2));
+        console.log('Full exception:', exception);
+        console.log('========================================\n');
         message = [];
         for (const p in exception.keyValue) {
           message.push(`${p} đã tồn tại`);
