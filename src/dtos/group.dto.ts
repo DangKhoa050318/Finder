@@ -43,6 +43,14 @@ export class CreateGroupDto {
   @Min(2, { message: 'Số thành viên tối đa phải >= 2' })
   @Max(200, { message: 'Số thành viên tối đa phải <= 200' })
   max_member?: number;
+
+  @ApiPropertyOptional({
+    description: 'Liên kết cuộc họp (Google Meet, Zoom, etc.)',
+    example: 'https://meet.google.com/abc-defg-hij',
+  })
+  @IsOptional()
+  @IsString({ message: 'Meeting link phải là chuỗi' })
+  meeting_link?: string;
 }
 
 export class UpdateGroupDto {
@@ -76,4 +84,12 @@ export class UpdateGroupDto {
   @Min(2, { message: 'Số thành viên tối đa phải >= 2' })
   @Max(200, { message: 'Số thành viên tối đa phải <= 200' })
   max_member?: number;
+
+  @ApiPropertyOptional({
+    description: 'Liên kết cuộc họp (Google Meet, Zoom, etc.)',
+    example: 'https://meet.google.com/abc-defg-hij',
+  })
+  @IsOptional()
+  @IsString({ message: 'Meeting link phải là chuỗi' })
+  meeting_link?: string;
 }

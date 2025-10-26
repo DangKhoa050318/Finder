@@ -63,6 +63,14 @@ export class Group {
     default: 'https://api.dicebear.com/7.x/avataaars/svg?seed=group',
   })
   avatar: string;
+
+  @ApiProperty({
+    description: 'Liên kết cuộc họp (Google Meet, Zoom, etc.)',
+    example: 'https://meet.google.com/abc-defg-hij',
+    required: false,
+  })
+  @Prop({ type: String, default: null })
+  meeting_link?: string;
 }
 
 export const GroupSchema = SchemaFactory.createForClass(Group);

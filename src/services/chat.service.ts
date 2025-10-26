@@ -279,6 +279,14 @@ export class ChatService {
         },
       },
       {
+        $lookup: {
+          from: 'groups',
+          localField: 'chat.group_id',
+          foreignField: '_id',
+          as: 'groupArray',
+        },
+      },
+      {
         $project: {
           _id: { $toString: '$chat._id' },
           chat_type: '$chat.chat_type',
@@ -300,6 +308,7 @@ export class ChatService {
               0,
             ],
           },
+          groupArray: 1,
         },
       },
       {
@@ -326,6 +335,32 @@ export class ChatService {
                     },
                   },
                   in: '$$otherParticipant.user',
+                },
+              },
+              null,
+            ],
+          },
+          groupInfo: {
+            $cond: [
+              { $eq: ['$chat_type', ChatType.Group] },
+              {
+                $let: {
+                  vars: {
+                    group: { $arrayElemAt: ['$groupArray', 0] },
+                  },
+                  in: {
+                    _id: { $toString: '$$group._id' },
+                    group_name: '$$group.group_name',
+                    avatar: '$$group.avatar',
+                    meeting_link: '$$group.meeting_link',
+                    memberCount: {
+                      $cond: [
+                        { $isArray: '$$group.members' },
+                        { $size: '$$group.members' },
+                        0,
+                      ],
+                    },
+                  },
                 },
               },
               null,
@@ -476,5 +511,62 @@ export class ChatService {
       message: 'Xóa member khỏi chat thành công',
       deletedCount: result.deletedCount,
     };
+  }
+
+  /**
+   * Tìm group chat theo group_id
+   * Helper method for finding chat group by study group ID
+   */
+  async findGroupChatByGroupId(group_id: string): Promise<ChatDocument | null> {
+    // Validate ObjectId format
+    if (!Types.ObjectId.isValid(group_id)) {
+      throw new BadRequestException('Group ID không hợp lệ');
+    }
+
+    const groupObjectId = new Types.ObjectId(group_id);
+
+    const chat = await this.chatModel.findOne({
+      chat_type: ChatType.Group,
+      group_id: groupObjectId,
+    });
+
+    return chat || null;
+  }
+
+  /**
+   * Xóa group chat và tất cả dữ liệu liên quan (participants, messages)
+   * Called when a study group is deleted
+   */
+  async deleteGroupChat(group_id: string): Promise<{ message: string }> {
+    // Validate ObjectId format
+    if (!Types.ObjectId.isValid(group_id)) {
+      throw new BadRequestException('Group ID không hợp lệ');
+    }
+
+    const groupObjectId = new Types.ObjectId(group_id);
+
+    // Find the group chat
+    const chat = await this.chatModel.findOne({
+      chat_type: ChatType.Group,
+      group_id: groupObjectId,
+    });
+
+    if (!chat) {
+      // Group chat doesn't exist, nothing to delete
+      return { message: 'Không tìm thấy chat nhóm để xóa' };
+    }
+
+    const chatObjectId = chat._id as Types.ObjectId;
+
+    // Delete all messages in this chat
+    await this.messageModel.deleteMany({ chat_id: chatObjectId });
+
+    // Delete all participants in this chat
+    await this.chatParticipantModel.deleteMany({ chat_id: chatObjectId });
+
+    // Delete the chat itself
+    await this.chatModel.findByIdAndDelete(chatObjectId);
+
+    return { message: 'Xóa chat nhóm và tất cả dữ liệu liên quan thành công' };
   }
 }

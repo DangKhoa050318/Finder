@@ -17,6 +17,13 @@ export interface UserChatDetailDto {
   updatedAt: Date;
   participants: any[];
   otherUser: any | null;
+  groupInfo?: {
+    _id: string;
+    group_name: string;
+    avatar?: string;
+    meeting_link?: string;
+    memberCount?: number;
+  } | null;
   lastMessage: any | null;
   unreadCount: number;
 }
@@ -102,6 +109,18 @@ export class ChatResponseDto {
     avatar?: string;
     email: string;
   };
+
+  @ApiProperty({
+    description: 'Thông tin nhóm (cho group chat)',
+    nullable: true,
+  })
+  groupInfo?: {
+    _id: string;
+    group_name: string;
+    avatar?: string;
+    meeting_link?: string;
+    memberCount?: number;
+  } | null;
 
   @ApiProperty({
     description: 'Tin nhắn cuối cùng',

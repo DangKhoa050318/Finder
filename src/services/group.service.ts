@@ -78,6 +78,7 @@ export class GroupService {
       avatar?: string;
       visibility?: GroupVisibility;
       max_member?: number;
+      meeting_link?: string;
     },
   ) {
     const group = await this.groupModel.findById(groupId);
@@ -109,6 +110,14 @@ export class GroupService {
 
     // Delete all members
     await this.groupMemberModel.deleteMany({ group_id: groupObjectId });
+
+    // Delete associated group chat and all related data (participants, messages)
+    try {
+      await this.chatService.deleteGroupChat(groupId);
+    } catch (error) {
+      // Log error but don't fail the group deletion
+      console.error('Failed to delete group chat:', error);
+    }
 
     // Delete group
     await this.groupModel.findByIdAndDelete(groupObjectId);
@@ -252,6 +261,20 @@ export class GroupService {
     }
 
     await this.addMember(groupId, userId, GroupMemberRole.Member);
+
+    // Auto-add user to group chat
+    try {
+      const groupChat = await this.chatService.findGroupChatByGroupId(groupId);
+      if (groupChat) {
+        await this.chatService.addMemberToChat(
+          (groupChat._id as any).toString(),
+          userId,
+        );
+      }
+    } catch (error) {
+      // Log error but don't fail the group join
+      console.error('Failed to add user to group chat:', error);
+    }
 
     // Send notification to all group members (except the new member)
     try {
