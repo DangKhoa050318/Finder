@@ -97,7 +97,7 @@ export class User {
   @ApiProperty({
     example: 'password123',
     description: 'Mật khẩu của người dùng',
-  })
+    })
   @Prop({ required: true })
   @MinLength(8, { message: 'Mật khẩu phải có ít nhất 8 ký tự' })
   password: string;
