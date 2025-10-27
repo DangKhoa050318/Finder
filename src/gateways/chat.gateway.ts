@@ -19,6 +19,7 @@ import { MessageService } from '../services/message.service';
   namespace: '/chat', // Namespace riêng cho chat
   transports: ['websocket', 'polling'],
 })
+
 export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server: Server;
@@ -65,7 +66,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     try {
       const messages = await this.messageService.getMessages({
         chat_id: chatId,
-        limit: 20, // Load 50 messages gần nhất
+        limit: 50, // Load 50 messages gần nhất
       });
 
       client.emit('chatHistory', {

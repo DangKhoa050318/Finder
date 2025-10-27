@@ -7,6 +7,7 @@ import {
   Min,
   Max,
   MinLength,
+  IsBoolean,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { GroupVisibility } from '../models/group.schema';
@@ -92,4 +93,18 @@ export class UpdateGroupDto {
   @IsOptional()
   @IsString({ message: 'Meeting link phải là chuỗi' })
   meeting_link?: string;
+}
+
+export class InviteUserDto {
+  @ApiProperty({ description: 'ID user được mời' })
+  @IsNotEmpty()
+  @IsString()
+  target_user_id: string;
+}
+
+export class RespondJoinRequestDto {
+  @ApiProperty({ description: 'Chấp nhận hay từ chối' })
+  @IsNotEmpty()
+  @IsBoolean()
+  approve: boolean;
 }

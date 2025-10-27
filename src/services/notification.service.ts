@@ -256,6 +256,29 @@ export class NotificationService {
   }
 
   /**
+   * Delete pending join requests for a specific user and group
+   * Used to remove old requests before creating a new one
+   * @param leaderId - The leader who receives the notification
+   * @param requesterId - The user who wants to join
+   * @param groupId - The group ID
+   */
+  async deletePendingJoinRequests(
+    leaderId: string,
+    requesterId: string,
+    groupId: string,
+  ): Promise<number> {
+    const result = await this.notificationModel.deleteMany({
+      user_id: new Types.ObjectId(leaderId),
+      type: NotificationType.GROUP_JOIN_REQUEST,
+      'metadata.requesterId': requesterId,
+      'metadata.groupId': groupId,
+      'metadata.handled': false,
+    });
+
+    return result.deletedCount;
+  }
+
+  /**
    * Clear old notifications (older than 30 days)
    */
   async clearOldNotifications(days: number = 30): Promise<any> {
@@ -310,6 +333,86 @@ export class NotificationService {
       relatedId: accepterId,
       actionUrl: `/dashboard/profile/${accepterId}`,
       actionLabel: 'Xem hồ sơ',
+    });
+  }
+
+  /**
+   * Send group join request notification to group's leader
+   */
+  async sendGroupJoinRequestNotification(
+    leaderId: string,
+    requesterName: string,
+    requesterId: string,
+    groupId: string,
+    groupName: string,
+    avatar?: string,
+  ): Promise<Notification> {
+    return this.createNotification({
+      user_id: leaderId,
+      type: NotificationType.GROUP_JOIN_REQUEST,
+      title: `${requesterName} muốn tham gia nhóm ${groupName}`,
+      description: 'Chấp nhận hoặc từ chối yêu cầu tham gia nhóm',
+      avatar,
+      relatedId: groupId,
+      actionUrl: `/dashboard/groups/${groupId}/requests`,
+      actionLabel: 'Xem yêu cầu',
+      metadata: {
+        requesterId,
+        requesterName,
+        groupId,
+        groupName,
+        handled: false,
+      },
+    });
+  }
+
+  /**
+   * Send invite notification to a user when someone invites them to a group
+   */
+  async sendGroupInviteNotification(
+    userId: string,
+    inviterName: string,
+    inviterId: string,
+    groupId: string,
+    groupName: string,
+    avatar?: string,
+  ): Promise<Notification> {
+    return this.createNotification({
+      user_id: userId,
+      type: NotificationType.GROUP_INVITE,
+      title: `${inviterName} mời bạn tham gia nhóm ${groupName}`,
+      description: 'Chấp nhận hoặc từ chối lời mời tham gia nhóm',
+      avatar,
+      relatedId: groupId,
+      actionUrl: `/dashboard/groups/${groupId}/invites`,
+      actionLabel: 'Xem lời mời',
+      metadata: { inviterId },
+    });
+  }
+
+  /**
+   * Notify requester about result of their join request (approved/rejected)
+   */
+  async sendGroupJoinRequestResultNotification(
+    requesterId: string,
+    approverName: string,
+    groupId: string,
+    groupName: string,
+    approved: boolean,
+    avatar?: string,
+  ) {
+    const title = approved
+      ? `${approverName} đã chấp nhận yêu cầu của bạn vào nhóm ${groupName}`
+      : `${approverName} đã từ chối yêu cầu của bạn vào nhóm ${groupName}`;
+
+    return this.createNotification({
+      user_id: requesterId,
+      type: NotificationType.SYSTEM,
+      title,
+      avatar,
+      relatedId: groupId,
+      actionUrl: `/dashboard/groups/${groupId}`,
+      actionLabel: 'Xem nhóm',
     });
   }
 

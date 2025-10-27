@@ -21,6 +21,7 @@ import {
 } from '@nestjs/swagger';
 import { GroupService } from '../services/group.service';
 import { CreateGroupDto, UpdateGroupDto } from '../dtos/group.dto';
+import { InviteUserDto, RespondJoinRequestDto } from '../dtos/group.dto';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import { GroupVisibility } from '../models/group.schema';
 
@@ -145,6 +146,42 @@ export class GroupController {
     @Param('groupId') groupId: string,
   ) {
     return this.groupService.joinGroup(groupId, _id);
+  }
+
+  @Post(':groupId/requests/:notificationId/respond')
+  @ApiOperation({ summary: 'Leader duyệt yêu cầu tham gia nhóm' })
+  async respondJoinRequest(
+    @User() { _id }: JwtPayload,
+    @Param('groupId') groupId: string,
+    @Param('notificationId') notificationId: string,
+    @Body() dto: RespondJoinRequestDto,
+  ) {
+    return this.groupService.respondToJoinRequest(
+      groupId,
+      _id,
+      notificationId,
+      dto.approve,
+    );
+  }
+
+  @Post(':groupId/invite')
+  @ApiOperation({ summary: 'Mời người khác vào nhóm' })
+  async inviteUser(
+    @User() { _id }: JwtPayload,
+    @Param('groupId') groupId: string,
+    @Body() dto: InviteUserDto,
+  ) {
+    return this.groupService.inviteUser(groupId, _id, dto.target_user_id);
+  }
+
+  @Post(':groupId/invite/:notificationId/accept')
+  @ApiOperation({ summary: 'Người được mời chấp nhận lời mời' })
+  async acceptInvite(
+    @User() { _id }: JwtPayload,
+    @Param('groupId') groupId: string,
+    @Param('notificationId') notificationId: string,
+  ) {
+    return this.groupService.acceptInvite(notificationId, _id);
   }
 
   @Post(':groupId/leave')

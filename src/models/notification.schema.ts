@@ -5,6 +5,7 @@ export enum NotificationType {
   FRIEND_REQUEST = 'friend_request',
   FRIEND_REQUEST_ACCEPTED = 'friend_request_accepted',
   FRIEND_REQUEST_REJECTED = 'friend_request_rejected',
+  GROUP_JOIN_REQUEST = 'group_join_request',
   GROUP_INVITE = 'group_invite',
   GROUP_MEMBER_JOINED = 'group_member_joined',
   GROUP_MEMBER_LEFT = 'group_member_left',
