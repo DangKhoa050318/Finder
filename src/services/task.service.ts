@@ -108,7 +108,7 @@ export class TaskService {
     limit: number = 20,
   ) {
     const skip = (page - 1) * limit;
-    const filter: any = { created_by: userId };
+    const filter: any = { created_by: new Types.ObjectId(userId) };
 
     if (status) {
       filter.status = status;
@@ -139,7 +139,7 @@ export class TaskService {
   // Get tasks by slot
   async getTasksBySlot(slotId: string) {
     return this.taskModel
-      .find({ slot_id: slotId })
+      .find({ slot_id: new Types.ObjectId(slotId) })
       .populate('created_by', 'full_name email avatar')
       .sort({ priority: -1, due_date: 1 });
   }
@@ -150,7 +150,7 @@ export class TaskService {
 
     return this.taskModel
       .find({
-        created_by: userId,
+        created_by: new Types.ObjectId(userId),
         due_date: { $lt: now },
         status: { $nin: [TaskStatus.Done, TaskStatus.Cancelled] },
       })
@@ -168,7 +168,7 @@ export class TaskService {
 
     return this.taskModel
       .find({
-        created_by: userId,
+        created_by: new Types.ObjectId(userId),
         due_date: { $gte: startOfDay, $lte: endOfDay },
         status: { $ne: TaskStatus.Cancelled },
       })
@@ -184,7 +184,7 @@ export class TaskService {
 
     return this.taskModel
       .find({
-        created_by: userId,
+        created_by: new Types.ObjectId(userId),
         due_date: { $gte: now, $lte: nextWeek },
         status: { $nin: [TaskStatus.Done, TaskStatus.Cancelled] },
       })
@@ -212,7 +212,7 @@ export class TaskService {
 
   // Get task statistics for user
   async getUserTaskStatistics(userId: string) {
-    const tasks = await this.taskModel.find({ created_by: userId });
+    const tasks = await this.taskModel.find({ created_by: new Types.ObjectId(userId) });
 
     const stats = {
       total: tasks.length,
