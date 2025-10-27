@@ -16,7 +16,6 @@ export interface UserChatDetailDto {
   createdAt: Date;
   updatedAt: Date;
   participants: any[];
-  otherUser: any | null;
   groupInfo?: {
     _id: string;
     group_name: string;
@@ -98,17 +97,6 @@ export class ChatResponseDto {
     example: '2025-10-17T00:00:00.000Z',
   })
   updatedAt: Date;
-
-  @ApiProperty({
-    description: 'Người dùng khác (cho private chat)',
-    nullable: true,
-  })
-  otherUser?: {
-    _id: string;
-    full_name: string;
-    avatar?: string;
-    email: string;
-  };
 
   @ApiProperty({
     description: 'Thông tin nhóm (cho group chat)',

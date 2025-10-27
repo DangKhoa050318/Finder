@@ -313,33 +313,6 @@ export class ChatService {
       },
       {
         $addFields: {
-          otherUser: {
-            $cond: [
-              { $eq: ['$chat_type', ChatType.Private] },
-              {
-                $let: {
-                  vars: {
-                    otherParticipant: {
-                      $arrayElemAt: [
-                        {
-                          $filter: {
-                            input: '$participants',
-                            as: 'p',
-                            cond: {
-                              $ne: [{ $toString: '$$p.user_id' }, user_id],
-                            },
-                          },
-                        },
-                        0,
-                      ],
-                    },
-                  },
-                  in: '$$otherParticipant.user',
-                },
-              },
-              null,
-            ],
-          },
           groupInfo: {
             $cond: [
               { $eq: ['$chat_type', ChatType.Group] },

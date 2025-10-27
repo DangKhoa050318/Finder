@@ -3,6 +3,8 @@ import {
   NotFoundException,
   ForbiddenException,
   Get,
+  Inject,
+  forwardRef,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
@@ -17,6 +19,7 @@ import {
 } from '../models/chat-participant.schema';
 import { SendMessageDto, GetMessagesQueryDto } from '../dtos/message.dto';
 import { ApiOperation } from '@nestjs/swagger';
+import { BlockService } from './block.service';
 
 @Injectable()
 export class MessageService {
@@ -24,6 +27,8 @@ export class MessageService {
     @InjectModel(Message.name) private messageModel: Model<MessageDocument>,
     @InjectModel(ChatParticipant.name)
     private chatParticipantModel: Model<ChatParticipantDocument>,
+    @Inject(forwardRef(() => BlockService))
+    private blockService: BlockService,
   ) {}
 
   /**
@@ -41,6 +46,26 @@ export class MessageService {
 
     if (!isParticipant) {
       throw new ForbiddenException('Bạn không phải là thành viên của chat này');
+    }
+
+    // Kiểm tra xem có block giữa sender và các recipients không
+    // Lấy danh sách participants của chat
+    const participants = await this.chatParticipantModel.find({
+      chat_id: chatObjectId,
+      user_id: { $ne: senderObjectId },
+    });
+
+    // Kiểm tra xem sender có bị chặn bởi bất kỳ recipient nào không
+    for (const participant of participants) {
+      const isBlocked = await this.blockService.hasBlockBetween(
+        dto.sender_id,
+        participant.user_id.toString(),
+      );
+      if (isBlocked) {
+        throw new ForbiddenException(
+          'Bạn không thể gửi tin nhắn vì bị chặn hoặc đã chặn người nhận',
+        );
+      }
     }
 
     // Tạo message

@@ -20,6 +20,9 @@ import {
 } from '@nestjs/swagger';
 import { MessageService } from '../services/message.service';
 import { ChatGateway } from '../gateways/chat.gateway';
+import { ChatService } from '../services/chat.service';
+import { NotificationService } from '../services/notification.service';
+import { UserService } from '../services/user.service';
 import {
   SendMessageDto,
   GetMessagesQueryDto,
@@ -35,6 +38,9 @@ export class MessageController {
   constructor(
     private readonly messageService: MessageService,
     private readonly chatGateway: ChatGateway,
+    private readonly chatService: ChatService,
+    private readonly notificationService: NotificationService,
+    private readonly userService: UserService,
   ) {}
 
   @Post()
@@ -51,6 +57,29 @@ export class MessageController {
 
     // Emit message qua WebSocket đến members của chat
     this.chatGateway.sendNewMessage(dto.chat_id, message);
+
+    // Gửi notification cho tất cả recipients (trừ sender)
+    try {
+      const chatMembers = await this.chatService.getChatMembers(dto.chat_id);
+      const sender = await this.userService.findById(dto.sender_id);
+
+      if (sender) {
+        // Gửi notification cho tất cả members trừ sender
+        for (const member of chatMembers) {
+          if (member.user_id._id.toString() !== dto.sender_id) {
+            await this.notificationService.sendMessageNotification(
+              member.user_id._id.toString(),
+              sender.full_name,
+              dto.content,
+              dto.chat_id,
+            );
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Failed to send message notifications:', error);
+    }
+
     return message;
   }
 
