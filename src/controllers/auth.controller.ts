@@ -11,6 +11,12 @@ import {
   RegisterDto,
   AuthLoginResponseDto,
   RegisterResponseDto,
+  ForgotPasswordDto,
+  ForgotPasswordResponseDto,
+  VerifyOtpDto,
+  VerifyOtpResponseDto,
+  ResetPasswordDto,
+  ResetPasswordResponseDto,
 } from '../dtos/auth.dto';
 import { UserResponseDto } from '../dtos/user.dto';
 import { Public } from '../decorators/public.decorator';
@@ -64,5 +70,57 @@ export class AuthController {
   @ApiResponse({ status: 401, description: 'Chưa xác thực' })
   async getMe(@User() { email }: JwtPayload) {
     return this.authService.getMe(email);
+  }
+
+  @Public()
+  @Post('forgot-password')
+  @ApiOperation({ summary: 'Gửi mã OTP để đặt lại mật khẩu' })
+  @ApiResponse({
+    status: 200,
+    description: 'Mã OTP đã được gửi đến email',
+    type: ForgotPasswordResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Email không tồn tại hoặc tài khoản bị khóa',
+  })
+  async forgotPassword(@Body() forgotPasswordDto: ForgotPasswordDto) {
+    return this.authService.forgotPassword(forgotPasswordDto.email);
+  }
+
+  @Public()
+  @Post('verify-otp')
+  @ApiOperation({ summary: 'Xác thực mã OTP' })
+  @ApiResponse({
+    status: 200,
+    description: 'Mã OTP hợp lệ',
+    type: VerifyOtpResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Mã OTP không hợp lệ hoặc đã hết hạn',
+  })
+  async verifyOtp(@Body() verifyOtpDto: VerifyOtpDto) {
+    return this.authService.verifyOtp(verifyOtpDto.email, verifyOtpDto.otp);
+  }
+
+  @Public()
+  @Post('reset-password')
+  @ApiOperation({ summary: 'Đặt lại mật khẩu với mã OTP' })
+  @ApiResponse({
+    status: 200,
+    description: 'Mật khẩu đã được đặt lại thành công',
+    type: ResetPasswordResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Mã OTP không hợp lệ hoặc đã hết hạn',
+  })
+  async resetPassword(@Body() resetPasswordDto: ResetPasswordDto) {
+    return this.authService.resetPassword(
+      resetPasswordDto.email,
+      resetPasswordDto.otp,
+      resetPasswordDto.newPassword,
+    );
   }
 }
