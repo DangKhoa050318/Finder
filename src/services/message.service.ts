@@ -17,6 +17,11 @@ import {
   ChatParticipant,
   ChatParticipantDocument,
 } from '../models/chat-participant.schema';
+import { Chat, ChatDocument } from '../models/chat.schema';
+import {
+  GroupMember,
+  GroupMemberDocument,
+} from '../models/group-member.schema';
 import { SendMessageDto, GetMessagesQueryDto } from '../dtos/message.dto';
 import { ApiOperation } from '@nestjs/swagger';
 import { BlockService } from './block.service';
@@ -27,6 +32,9 @@ export class MessageService {
     @InjectModel(Message.name) private messageModel: Model<MessageDocument>,
     @InjectModel(ChatParticipant.name)
     private chatParticipantModel: Model<ChatParticipantDocument>,
+    @InjectModel(Chat.name) private chatModel: Model<ChatDocument>,
+    @InjectModel(GroupMember.name)
+    private groupMemberModel: Model<GroupMemberDocument>,
     @Inject(forwardRef(() => BlockService))
     private blockService: BlockService,
   ) {}
@@ -131,14 +139,59 @@ export class MessageService {
     const chatObjectId = new Types.ObjectId(chat_id);
     const userObjectId = new Types.ObjectId(user_id);
 
-    // Kiểm tra user có phải member không
-    const isParticipant = await this.chatParticipantModel.findOne({
+    // Kiểm tra chat có tồn tại không
+    const chat = await this.chatModel.findById(chatObjectId);
+    if (!chat) {
+      throw new NotFoundException('Chat không tồn tại');
+    }
+
+    // Kiểm tra user có phải member của chat không
+    let isParticipant = await this.chatParticipantModel.findOne({
       chat_id: chatObjectId,
       user_id: userObjectId,
     });
 
+    console.log(
+      `🔍 [markMessagesAsRead] Chat: ${chat_id}, User: ${user_id}, isParticipant: ${!!isParticipant}, isGroupChat: ${!!chat.group_id}`,
+    );
+
+    // Nếu chưa có participant record, kiểm tra trong chat members và tạo mới
     if (!isParticipant) {
-      throw new ForbiddenException('Bạn không phải là thành viên của chat này');
+      // Nếu là group chat, kiểm tra thành viên nhóm
+      if (chat.group_id) {
+        console.log(
+          `🔍 [markMessagesAsRead] Checking GroupMember for group_id: ${chat.group_id}`,
+        );
+
+        const isGroupMember = await this.groupMemberModel.findOne({
+          group_id: chat.group_id,
+          user_id: userObjectId,
+        });
+
+        console.log(
+          `🔍 [markMessagesAsRead] isGroupMember: ${!!isGroupMember}`,
+        );
+
+        if (!isGroupMember) {
+          throw new ForbiddenException(
+            'Bạn không phải là thành viên của chat này',
+          );
+        }
+
+        console.log('✨ [markMessagesAsRead] Creating ChatParticipant...');
+      }
+      // Đối với private chat, giả sử user có quyền truy cập nếu họ có thể xem chat
+
+      // Tạo participant record mới
+      isParticipant = await this.chatParticipantModel.create({
+        chat_id: chatObjectId,
+        user_id: userObjectId,
+        last_seen_at: new Date(),
+      });
+
+      console.log(
+        `✅ [markMessagesAsRead] Created ChatParticipant: ${isParticipant._id}`,
+      );
     }
 
     // Update messages không phải của user và chưa đọc
@@ -149,6 +202,10 @@ export class MessageService {
         status: { $ne: MessageStatus.Read },
       },
       { status: MessageStatus.Read },
+    );
+
+    console.log(
+      `✅ [markMessagesAsRead] Updated ${result.modifiedCount} messages in chat ${chat_id} for user ${user_id}`,
     );
 
     // Update last_seen_at của participant

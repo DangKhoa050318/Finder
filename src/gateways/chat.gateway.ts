@@ -127,9 +127,22 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   /**
    * Gửi tin nhắn mới đến tất cả members trong chat
    */
-  sendNewMessage(chatId: string, message: any) {
+  sendNewMessage(chatId: string, message: any, members?: any[]) {
+    // Emit đến chat room (cho users đang mở chat đó)
     this.server.to(`chat_${chatId}`).emit('newMessage', message);
-    this.logger.log(`💬 Sent message to chat ${chatId}`);
+    
+    // Emit đến user rooms của tất cả members (để cập nhật danh sách chat real-time)
+    if (members && members.length > 0) {
+      members.forEach(member => {
+        const userId = member.user_id?._id?.toString() || member.user_id?.toString();
+        if (userId) {
+          this.server.to(`user_${userId}`).emit('newMessage', message);
+          this.logger.log(`� Sent message to user ${userId}`);
+        }
+      });
+    }
+    
+    this.logger.log(`�💬 Sent message to chat ${chatId} and ${members?.length || 0} users`);
   }
 
   /**
