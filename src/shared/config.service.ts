@@ -39,6 +39,8 @@ export class ConfigService {
       port: this.getNumber('PORT') ?? 5000,
       prefix: this.getString('API_PREFIX') ?? '/api',
       swaggerPath: this.getString('SWAGGER_PATH') ?? '/api',
+      mailUser: this.getString('MAIL_USER'),
+      mailPass: this.getString('MAIL_PASS'),
     };
   }
   private get(key: string): string {

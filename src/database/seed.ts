@@ -4,6 +4,7 @@ import { GroupMemberRole } from '../models/group-member.schema';
 import { AppModule } from '../app.module';
 import { GroupDocument, GroupVisibility } from '../models/group.schema';
 import { Role } from '../models/user.schema';
+import { TaskPriority, TaskStatus } from '../models/task.schema';
 import { AvailabilityService } from '../services/availability.service';
 import { CourseService } from '../services/course.service';
 import { FriendService } from '../services/friend.service';
@@ -12,6 +13,7 @@ import { MajorService } from '../services/major.service';
 import { MajorCourseService } from '../services/major_course.service';
 import { NewsService } from '../services/news.service';
 import { SlotService } from '../services/slot.service';
+import { TaskService } from '../services/task.service';
 import { UserService } from '../services/user.service';
 
 async function seed() {
@@ -30,6 +32,7 @@ async function seed() {
     const slotService = app.get(SlotService);
     const newsService = app.get(NewsService);
     const availabilityService = app.get(AvailabilityService);
+    const taskService = app.get(TaskService);
 
     // 1. Seed Majors
     console.log('📚 Đang seed majors...');
@@ -308,7 +311,7 @@ async function seed() {
       for (const memberIdx of data.members) {
         try {
           await groupService.addMember(
-            group.id,
+            group._id.toString(),
             demoUsers[memberIdx]._id.toString(),
             GroupMemberRole.Member,
           );
@@ -320,7 +323,93 @@ async function seed() {
 
     console.log(`✅ Đã tạo ${groups.length} groups\n`);
 
-    // 8. Seed Slots
+    // 8. Seed Tasks
+    console.log('📝 Đang seed tasks...');
+    let taskCount = 0;
+
+    const taskData = [
+      {
+        userId: 0,
+        title: 'Complete PRN231 Assignment',
+        description: 'Build a .NET console application for task management',
+        priority: TaskPriority.High,
+        daysOffset: 3,
+      },
+      {
+        userId: 1,
+        title: 'Study for DBI202 Exam',
+        description: 'Review SQL queries and database design concepts',
+        priority: TaskPriority.High,
+        daysOffset: 5,
+      },
+      {
+        userId: 2,
+        title: 'Finish PRJ301 Project Report',
+        description: 'Write technical report for Java web application',
+        priority: TaskPriority.Medium,
+        daysOffset: 4,
+      },
+      {
+        userId: 3,
+        title: 'Review lecture notes - OSG202',
+        description: 'Go through operating systems chapter 5-6',
+        priority: TaskPriority.Medium,
+        daysOffset: 2,
+      },
+      {
+        userId: 4,
+        title: 'Complete homework - NWC203',
+        description: 'Solve networking problems set 3',
+        priority: TaskPriority.Medium,
+        daysOffset: 3,
+      },
+      {
+        userId: 5,
+        title: 'Prepare presentation - SWE201',
+        description: 'Software engineering project presentation slides',
+        priority: TaskPriority.High,
+        daysOffset: 6,
+      },
+      {
+        userId: 6,
+        title: 'Practice coding problems',
+        description:
+          'LeetCode medium level problems on arrays and linked lists',
+        priority: TaskPriority.Low,
+        daysOffset: 7,
+      },
+      {
+        userId: 7,
+        title: 'Read textbook chapter 8',
+        description: 'Read and summarize algorithm complexity chapter',
+        priority: TaskPriority.Low,
+        daysOffset: 4,
+      },
+    ];
+
+    for (const task of taskData) {
+      const dueDate = new Date();
+      dueDate.setDate(dueDate.getDate() + task.daysOffset);
+      dueDate.setHours(23, 59, 59, 0);
+
+      try {
+        await taskService.createTask(
+          demoUsers[task.userId]._id.toString(),
+          task.title,
+          task.description,
+          dueDate,
+          undefined, // slot_id
+          task.priority,
+        );
+        taskCount++;
+      } catch (error) {
+        // Bỏ qua lỗi
+      }
+    }
+
+    console.log(`✅ Đã tạo ${taskCount} tasks\n`);
+
+    // 9. Seed Slots
     console.log('📅 Đang seed slots...');
     let slotCount = 0;
 
@@ -339,16 +428,21 @@ async function seed() {
 
       if (day % 2 === 1) {
         // Group slots
-        await slotService.createGroupSlot(
-          demoUsers[day % groups.length].id,
-          groups[day % groups.length].id,
-          `Morning Study - Day ${day}`,
-          `Buổi học buổi sáng về ${groups[day % groups.length].group_name}`,
-          morningStart,
-          morningEnd,
-        
-        );
-        slotCount++;
+        try {
+          const groupIdx = day % groups.length;
+          const groupData = groups[groupIdx] as any;
+          await slotService.createGroupSlot(
+            demoUsers[groupIdx]._id.toString(),
+            groupData._id.toString(),
+            `Morning Study - Day ${day}`,
+            `Buổi học buổi sáng về ${groupData.group_name}`,
+            morningStart,
+            morningEnd,
+          );
+          slotCount++;
+        } catch {
+          // Bỏ qua lỗi
+        }
       }
 
       // Afternoon slot (14:00 - 16:00)
@@ -358,15 +452,21 @@ async function seed() {
       afternoonEnd.setHours(16, 0, 0, 0);
 
       if (day <= 4) {
-        await slotService.createGroupSlot(
-          demoUsers[(day + 1) % groups.length].id,
-          groups[(day + 1) % groups.length].id,
-          `Afternoon Workshop - Day ${day}`,
-          'Workshop thực hành và chia sẻ kinh nghiệm',
-          afternoonStart,
-          afternoonEnd,
-        );
-        slotCount++;
+        try {
+          const groupIdx = (day + 1) % groups.length;
+          const groupData = groups[groupIdx] as any;
+          await slotService.createGroupSlot(
+            demoUsers[(day + 1) % demoUsers.length]._id.toString(),
+            groupData._id.toString(),
+            `Afternoon Workshop - Day ${day}`,
+            'Workshop thực hành và chia sẻ kinh nghiệm',
+            afternoonStart,
+            afternoonEnd,
+          );
+          slotCount++;
+        } catch {
+          // Bỏ qua lỗi
+        }
       }
 
       // Evening slot (19:00 - 21:00)
@@ -377,24 +477,28 @@ async function seed() {
 
       if (day % 3 === 0) {
         // Private slots
-        const user1Idx = day % demoUsers.length;
-        const user2Idx = (day + 1) % demoUsers.length;
+        try {
+          const user1Idx = day % demoUsers.length;
+          const user2Idx = (day + 1) % demoUsers.length;
 
-        await slotService.createPrivateSlot(
-          demoUsers[user1Idx]._id.toString(),
-          demoUsers[user2Idx]._id.toString(),
-          `Private Study - Day ${day}`,
-          'Buổi học riêng 1-1',
-          eveningStart,
-          eveningEnd,
-        );
-        slotCount++;
+          await slotService.createPrivateSlot(
+            demoUsers[user1Idx]._id.toString(),
+            demoUsers[user2Idx]._id.toString(),
+            `Private Study - Day ${day}`,
+            'Buổi học riêng 1-1',
+            eveningStart,
+            eveningEnd,
+          );
+          slotCount++;
+        } catch {
+          // Bỏ qua lỗi
+        }
       }
     }
 
     console.log(`✅ Đã tạo ${slotCount} slots\n`);
 
-    // 9. Seed News
+    // 10. Seed News
     console.log('📰 Đang seed news...');
     const newsData = [
       {
@@ -482,11 +586,11 @@ Chúc các bạn học tập hiệu quả! 🎓`,
 
     console.log(`✅ Đã tạo ${newsData.length} news articles\n`);
 
-    // 10. Seed Availabilities
+    // 11. Seed Availabilities
     console.log('🕒 Đang seed availabilities...');
     let availabilityCount = 0;
 
-    // Mỗi user có vài availability trong tuần tới
+    // Mỗi user có vài availability trong tuần
     for (let i = 0; i < demoUsers.length; i++) {
       const user = demoUsers[i];
 
@@ -494,9 +598,8 @@ Chúc các bạn học tập hiệu quả! 🎓`,
       const numAvailabilities = 3 + (i % 3);
 
       for (let j = 0; j < numAvailabilities; j++) {
-        const date = new Date();
-        date.setDate(date.getDate() + j + 1);
-        date.setHours(0, 0, 0, 0);
+        // day_of_week: 1-7 (1=Monday, 7=Sunday)
+        const dayOfWeek = ((j + i) % 7) + 1;
 
         const timeSlots = [
           { start: '08:00', end: '10:00' },
@@ -510,8 +613,8 @@ Chúc các bạn học tập hiệu quả! 🎓`,
 
         try {
           await availabilityService.create({
-            user_id: user.id,
-            day_of_week: date.getDay(),
+            user_id: user._id.toString(),
+            day_of_week: dayOfWeek,
             start_time: timeSlot.start,
             end_time: timeSlot.end,
           });
@@ -537,7 +640,8 @@ Chúc các bạn học tập hiệu quả! 🎓`,
     console.log('├─ 🤝 Friendships:', friendshipCount);
     console.log('├─ 👨‍👩‍👧‍👦 Groups:', groups.length);
     console.log('├─ 📅 Slots:', slotCount);
-    console.log('├─ 📰 News:', newsData.length);
+    console.log('├─ � Tasks:', taskCount);
+    console.log('├─ �📰 News:', newsData.length);
     console.log('└─ 🕒 Availabilities:', availabilityCount);
 
     console.log('\n📝 THÔNG TIN ĐĂNG NHẬP:\n');

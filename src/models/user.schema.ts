@@ -97,7 +97,7 @@ export class User {
   @ApiProperty({
     example: 'password123',
     description: 'Mật khẩu của người dùng',
-    })
+  })
   @Prop({ required: true })
   @MinLength(8, { message: 'Mật khẩu phải có ít nhất 8 ký tự' })
   password: string;
@@ -160,6 +160,22 @@ export class User {
   })
   schedulePreference: SchedulePreference;
 
+  @ApiProperty({
+    description: 'Mã OTP để đặt lại mật khẩu',
+    required: false,
+    example: '123456',
+  })
+  @Prop({ type: String, required: false })
+  otp?: string;
+
+  @ApiProperty({
+    description: 'Thời gian hết hạn của OTP',
+    required: false,
+    type: Date,
+  })
+  @Prop({ type: Date, required: false })
+  otpExpiry?: Date;
+
   comparePassword: (password: string) => Promise<boolean>;
 }
 
@@ -196,4 +212,3 @@ export const UserSchemaModule = MongooseModule.forFeatureAsync([
     inject: [ConfigService],
   },
 ]);
-

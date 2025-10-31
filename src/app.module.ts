@@ -78,6 +78,7 @@ import { TaskService } from './services/task.service';
 import { ReminderService } from './services/reminder.service';
 import { ChatService } from './services/chat.service';
 import { MessageService } from './services/message.service';
+import { EmailService } from './services/email.service';
 // WebSocket Gateways
 import { ChatGateway } from './gateways/chat.gateway';
 import { NotificationGateway } from './gateways/notification.gateway';
@@ -192,6 +193,7 @@ import { NotificationController } from './controllers/notification.controller';
     ReminderService,
     ChatService,
     MessageService,
+    EmailService,
     ChatGateway,
     NotificationGateway,
     NotificationService,
