@@ -55,12 +55,13 @@ export class MessageController {
     // Tạo message trong database
     const message = await this.messageService.sendMessage(dto);
 
-    // Emit message qua WebSocket đến members của chat
-    this.chatGateway.sendNewMessage(dto.chat_id, message);
-
     // Gửi notification cho tất cả recipients (trừ sender)
     try {
       const chatMembers = await this.chatService.getChatMembers(dto.chat_id);
+
+      // Emit message qua WebSocket đến members của chat (cả chat room và user rooms)
+      this.chatGateway.sendNewMessage(dto.chat_id, message, chatMembers);
+
       const sender = await this.userService.findById(dto.sender_id);
 
       if (sender) {
@@ -112,11 +113,20 @@ export class MessageController {
   @ApiOperation({ summary: 'Đánh dấu messages là đã đọc' })
   @ApiResponse({ status: 200, description: 'Thành công' })
   async markAsRead(@Param('chatId') chatId: string, @Request() req) {
-    const userId = req.user.userId;
+    console.log('🔍 [Controller] req.user:', req.user);
+    
+    const userId = req.user._id;
+    
+    console.log(`🎯 [Controller] markAsRead called - chatId: ${chatId}, userId: ${userId}`);
+    
     const result = await this.messageService.markMessagesAsRead(chatId, userId);
 
-    // Emit event qua WebSocket
-    this.chatGateway.sendMessageSeen(chatId, userId);
+    // Gửi event qua WebSocket - thông báo cho tất cả users trong chat
+    // Note: messageId là 'all' vì chúng ta đánh dấu tất cả tin nhắn chưa đọc
+    this.chatGateway.sendMessageSeen(chatId, { 
+      messageId: 'all', // Đánh dấu tất cả messages đã xem
+      userId 
+    });
 
     return result;
   }

@@ -60,37 +60,61 @@ export class ChatService {
     const user1ObjectId = new Types.ObjectId(user1_id);
     const user2ObjectId = new Types.ObjectId(user2_id);
 
-    // Tìm chat participants của cả 2 users
-    const [user1Chats, user2Chats] = await Promise.all([
-      this.chatParticipantModel
-        .find({ user_id: user1ObjectId })
-        .select('chat_id')
-        .lean(),
-      this.chatParticipantModel
-        .find({ user_id: user2ObjectId })
-        .select('chat_id')
-        .lean(),
+    // Tìm private chat giữa 2 users bằng aggregation
+    // Tìm chat có đúng 2 participants là user1 và user2
+    const existingChat = await this.chatModel.aggregate([
+      {
+        // Chỉ lấy private chats
+        $match: {
+          chat_type: ChatType.Private,
+          group_id: null,
+        },
+      },
+      {
+        // Join với ChatParticipant
+        $lookup: {
+          from: 'chatparticipants',
+          localField: '_id',
+          foreignField: 'chat_id',
+          as: 'participants',
+        },
+      },
+      {
+        // Chỉ lấy chats có đúng 2 participants
+        $match: {
+          'participants.1': { $exists: true }, // Có ít nhất 2 participants
+          'participants.2': { $exists: false }, // Không có participant thứ 3
+        },
+      },
+      {
+        // Lọc chat có đúng 2 users
+        $match: {
+          $and: [
+            {
+              participants: {
+                $elemMatch: { user_id: user1ObjectId },
+              },
+            },
+            {
+              participants: {
+                $elemMatch: { user_id: user2ObjectId },
+              },
+            },
+          ],
+        },
+      },
+      {
+        $limit: 1,
+      },
     ]);
 
-    // Tìm chat_id chung
-    const user1ChatIds = user1Chats.map((p) => p.chat_id.toString());
-    const user2ChatIds = user2Chats.map((p) => p.chat_id.toString());
-    const commonChatIds = user1ChatIds.filter((id) =>
-      user2ChatIds.includes(id),
-    );
-
-    // Kiểm tra xem có private chat nào giữa 2 users không
-    for (const chatId of commonChatIds) {
-      const chat = await this.chatModel.findById(chatId);
-      if (chat && chat.chat_type === ChatType.Private) {
-        // Kiểm tra chat này chỉ có 2 members
-        const participantCount = await this.chatParticipantModel.countDocuments(
-          { chat_id: new Types.ObjectId(chatId) },
-        );
-        if (participantCount === 2) {
-          return chat;
-        }
+    // Nếu tìm thấy chat, trả về
+    if (existingChat && existingChat.length > 0) {
+      const chat = await this.chatModel.findById(existingChat[0]._id);
+      if (!chat) {
+        throw new NotFoundException('Chat không tồn tại');
       }
+      return chat;
     }
 
     // Nếu chưa có, tạo mới
@@ -212,9 +236,6 @@ export class ChatService {
             },
           ]
         : []),
-      {
-        $sort: { 'chat.updatedAt': -1 },
-      },
       {
         $lookup: {
           from: 'chatparticipants',
@@ -344,6 +365,18 @@ export class ChatService {
     ];
 
     const result = await this.chatParticipantModel.aggregate(pipeline).exec();
+
+    // Sort by lastMessage time (newest first)
+    // Chats without messages will go to the bottom
+    result.sort((a, b) => {
+      const timeA = a.lastMessage?.createdAt
+        ? new Date(a.lastMessage.createdAt).getTime()
+        : 0;
+      const timeB = b.lastMessage?.createdAt
+        ? new Date(b.lastMessage.createdAt).getTime()
+        : 0;
+      return timeB - timeA; // Descending order (newest first)
+    });
 
     return result as UserChatDetailDto[];
   }
