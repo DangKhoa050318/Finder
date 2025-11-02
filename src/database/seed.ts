@@ -135,11 +135,10 @@ async function seed() {
     if (admin) {
       console.log('✅ Admin đã tồn tại\n');
     } else {
-      const hashedPassword = await bcrypt.hash('123', 10);
       admin = await userService.create({
         full_name: 'Administrator',
         email: 'admin123@gmail.com',
-        password: hashedPassword,
+        password: '123',
         avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=admin',
         role: Role.Admin,
         major_id: majors[0].id,
