@@ -40,6 +40,7 @@ import { TaskController } from './controllers/task.controller';
 import { ReminderController } from './controllers/reminder.controller';
 import { ChatController } from './controllers/chat.controller';
 import { MessageController } from './controllers/message.controller';
+import { GroupDocumentController } from './controllers/group-document.controller';
 // New schemas
 import {
   FriendRequest,
@@ -65,6 +66,7 @@ import { Attendance, AttendanceSchema } from './models/attendance.schema';
 import { Task, TaskSchema } from './models/task.schema';
 import { Reminder, ReminderSchema } from './models/reminder.schema';
 import { Notification, NotificationSchema } from './models/notification.schema';
+import { GroupDocument, GroupDocumentSchema } from './models/group-document.schema';
 // New services
 import { FriendService } from './services/friend.service';
 import { ReportService } from './services/report.service';
@@ -78,6 +80,7 @@ import { TaskService } from './services/task.service';
 import { ReminderService } from './services/reminder.service';
 import { ChatService } from './services/chat.service';
 import { MessageService } from './services/message.service';
+import { GroupDocumentService } from './services/group-document.service';
 import { EmailService } from './services/email.service';
 // WebSocket Gateways
 import { ChatGateway } from './gateways/chat.gateway';
@@ -86,11 +89,14 @@ import { NotificationGateway } from './gateways/notification.gateway';
 import { TasksModule } from './tasks/tasks.module';
 import { NotificationService } from './services/notification.service';
 import { NotificationController } from './controllers/notification.controller';
+// Upload Module
+import { UploadModule } from './modules/upload/upload.module';
 
 @Module({
   imports: [
     GlobalModule,
     TasksModule,
+    UploadModule,
     MongooseModule.forRootAsync({
       useFactory: (cfg: ConfigService) => {
         return {
@@ -127,6 +133,7 @@ import { NotificationController } from './controllers/notification.controller';
       { name: Task.name, schema: TaskSchema },
       { name: Reminder.name, schema: ReminderSchema },
       { name: Notification.name, schema: NotificationSchema },
+      { name: GroupDocument.name, schema: GroupDocumentSchema },
     ]),
   ],
   controllers: [
@@ -148,6 +155,7 @@ import { NotificationController } from './controllers/notification.controller';
     ReminderController,
     ChatController,
     MessageController,
+    GroupDocumentController,
     NotificationController,
   ],
   providers: [
@@ -193,6 +201,7 @@ import { NotificationController } from './controllers/notification.controller';
     ReminderService,
     ChatService,
     MessageService,
+    GroupDocumentService,
     EmailService,
     ChatGateway,
     NotificationGateway,

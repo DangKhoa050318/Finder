@@ -1,5 +1,27 @@
-import { IsNotEmpty, IsString, IsOptional, MinLength } from 'class-validator';
+import { IsNotEmpty, IsString, IsOptional, MinLength, IsArray, ValidateNested } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
+
+export class AttachmentDto {
+  @ApiProperty({ description: 'Tên file trên server' })
+  @IsString()
+  filename: string;
+
+  @ApiProperty({ description: 'Tên file gốc' })
+  @IsString()
+  originalName: string;
+
+  @ApiProperty({ description: 'MIME type' })
+  @IsString()
+  mimetype: string;
+
+  @ApiProperty({ description: 'Kích thước file (bytes)' })
+  size: number;
+
+  @ApiProperty({ description: 'URL truy cập file' })
+  @IsString()
+  url: string;
+}
 
 export class CreateNewsDto {
   @ApiProperty({ description: 'Tiêu đề tin tức' })
@@ -13,6 +35,16 @@ export class CreateNewsDto {
   @IsString({ message: 'Nội dung phải là chuỗi' })
   @MinLength(20, { message: 'Nội dung phải có ít nhất 20 ký tự' })
   content: string;
+
+  @ApiPropertyOptional({
+    description: 'Danh sách file đính kèm',
+    type: [AttachmentDto],
+  })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => AttachmentDto)
+  attachments?: AttachmentDto[];
 }
 
 export class UpdateNewsDto {
@@ -27,4 +59,14 @@ export class UpdateNewsDto {
   @IsString({ message: 'Nội dung phải là chuỗi' })
   @MinLength(20, { message: 'Nội dung phải có ít nhất 20 ký tự' })
   content?: string;
+
+  @ApiPropertyOptional({
+    description: 'Danh sách file đính kèm',
+    type: [AttachmentDto],
+  })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => AttachmentDto)
+  attachments?: AttachmentDto[];
 }

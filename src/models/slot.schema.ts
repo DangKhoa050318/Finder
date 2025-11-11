@@ -9,6 +9,23 @@ export enum SlotType {
   Private = 'private',
 }
 
+class Attachment {
+  @Prop({ required: true })
+  filename: string;
+
+  @Prop({ required: true })
+  originalName: string;
+
+  @Prop({ required: true })
+  mimetype: string;
+
+  @Prop({ required: true })
+  size: number;
+
+  @Prop({ required: true })
+  url: string;
+}
+
 @Schema({
   timestamps: true,
   versionKey: false,
@@ -60,6 +77,13 @@ export class Slot {
     required: true,
   })
   slot_type: SlotType;
+
+  @ApiProperty({
+    description: 'Tệp đính kèm',
+    type: [Attachment],
+  })
+  @Prop({ type: [Attachment], default: [] })
+  attachments: Attachment[];
 }
 
 export const SlotSchema = SchemaFactory.createForClass(Slot);

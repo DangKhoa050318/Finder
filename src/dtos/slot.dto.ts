@@ -6,9 +6,40 @@ import {
   IsMongoId,
   IsEnum,
   MinLength,
+  IsArray,
+  ValidateNested,
+  IsNumber,
 } from 'class-validator';
+import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { SlotType } from '../models/slot.schema';
+
+export class AttachmentDto {
+  @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
+  filename: string;
+
+  @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
+  originalName: string;
+
+  @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
+  mimetype: string;
+
+  @ApiProperty()
+  @IsNumber()
+  @IsNotEmpty()
+  size: number;
+
+  @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
+  url: string;
+}
 
 export class CreateGroupSlotDto {
   @ApiProperty({ description: 'ID của nhóm' })
@@ -36,6 +67,13 @@ export class CreateGroupSlotDto {
   @IsNotEmpty({ message: 'End time không được để trống' })
   @IsDateString({}, { message: 'End time phải là định dạng datetime hợp lệ' })
   end_time: string;
+
+  @ApiPropertyOptional({ type: [AttachmentDto], description: 'Tệp đính kèm' })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => AttachmentDto)
+  attachments?: AttachmentDto[];
 }
 
 export class CreatePrivateSlotDto {
@@ -64,6 +102,13 @@ export class CreatePrivateSlotDto {
   @IsNotEmpty({ message: 'End time không được để trống' })
   @IsDateString({}, { message: 'End time phải là định dạng datetime hợp lệ' })
   end_time: string;
+
+  @ApiPropertyOptional({ type: [AttachmentDto], description: 'Tệp đính kèm' })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => AttachmentDto)
+  attachments?: AttachmentDto[];
 }
 
 export class UpdateSlotDto {
@@ -87,6 +132,13 @@ export class UpdateSlotDto {
   @IsOptional()
   @IsDateString({}, { message: 'End time phải là định dạng datetime hợp lệ' })
   end_time?: string;
+
+  @ApiPropertyOptional({ type: [AttachmentDto], description: 'Tệp đính kèm' })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => AttachmentDto)
+  attachments?: AttachmentDto[];
 }
 
 export class GetSlotsDto {

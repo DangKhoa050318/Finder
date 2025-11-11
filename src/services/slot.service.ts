@@ -3,6 +3,8 @@ import {
   NotFoundException,
   BadRequestException,
   ForbiddenException,
+  Inject,
+  forwardRef,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
@@ -12,6 +14,10 @@ import {
   SlotPrivate,
   SlotPrivateDocument,
 } from '../models/slot-private.schema';
+import { Group, GroupDocument } from '../models/group.schema';
+import { MessageService } from './message.service';
+import { ChatService } from './chat.service';
+import { MessageType } from '../models/message.schema';
 
 @Injectable()
 export class SlotService {
@@ -22,6 +28,12 @@ export class SlotService {
     private slotGroupModel: Model<SlotGroupDocument>,
     @InjectModel(SlotPrivate.name)
     private slotPrivateModel: Model<SlotPrivateDocument>,
+    @InjectModel(Group.name)
+    private groupModel: Model<GroupDocument>,
+    @Inject(forwardRef(() => MessageService))
+    private messageService: MessageService,
+    @Inject(forwardRef(() => ChatService))
+    private chatService: ChatService,
   ) {}
 
   // Create group slot
@@ -32,6 +44,7 @@ export class SlotService {
     description: string,
     startTime: Date,
     endTime: Date,
+    attachments?: any[],
   ) {
     if (startTime >= endTime) {
       throw new BadRequestException(
@@ -43,6 +56,18 @@ export class SlotService {
       throw new BadRequestException('Không thể tạo slot trong quá khứ');
     }
 
+    // Check if user is leader of the group
+    const group = await this.groupModel.findById(groupId);
+    if (!group) {
+      throw new NotFoundException('Không tìm thấy nhóm');
+    }
+
+    if (group.leader_id.toString() !== userId) {
+      throw new ForbiddenException(
+        'Chỉ lãnh đạo nhóm mới có thể tạo lịch học cho nhóm',
+      );
+    }
+
     const slot = new this.slotModel({
       title,
       description,
@@ -50,6 +75,7 @@ export class SlotService {
       end_time: endTime,
       created_by: new Types.ObjectId(userId),
       slot_type: SlotType.Group,
+      attachments: attachments || [],
     });
 
     const savedSlot = await slot.save();
@@ -62,6 +88,30 @@ export class SlotService {
 
     await slotGroup.save();
 
+    // Send slot invitation to group chat
+    try {
+      const groupChat = await this.chatService.findGroupChatByGroupId(groupId);
+      if (groupChat) {
+        await this.messageService.sendMessage({
+          chat_id: (groupChat._id as Types.ObjectId).toString(),
+          sender_id: userId,
+          content: `📅 Lời mời tham gia lịch học: ${title}`,
+          message_type: MessageType.SLOT_INVITATION,
+          metadata: {
+            slot_id: (savedSlot._id as Types.ObjectId).toString(),
+            slot_type: SlotType.Group,
+            start_time: startTime.toISOString(),
+            end_time: endTime.toISOString(),
+            description,
+            attachments: attachments || [],
+          },
+        });
+      }
+    } catch (error) {
+      console.error('Failed to send slot invitation to chat:', error);
+      // Don't fail the slot creation if message sending fails
+    }
+
     return savedSlot;
   }
 
@@ -73,6 +123,7 @@ export class SlotService {
     description: string,
     startTime: Date,
     endTime: Date,
+    attachments?: any[],
   ) {
     if (startTime >= endTime) {
       throw new BadRequestException(
@@ -91,6 +142,7 @@ export class SlotService {
       end_time: endTime,
       created_by: new Types.ObjectId(userId),
       slot_type: SlotType.Private,
+      attachments: attachments || [],
     });
 
     const savedSlot = await slot.save();
@@ -107,6 +159,33 @@ export class SlotService {
 
     await slotPrivate.save();
 
+    // Send slot invitation to private chat
+    try {
+      const privateChat = await this.chatService.findOrCreatePrivateChat(
+        userId,
+        friendId,
+      );
+      if (privateChat) {
+        await this.messageService.sendMessage({
+          chat_id: (privateChat._id as Types.ObjectId).toString(),
+          sender_id: userId,
+          content: `📅 Lời mời tham gia lịch học: ${title}`,
+          message_type: MessageType.SLOT_INVITATION,
+          metadata: {
+            slot_id: (savedSlot._id as Types.ObjectId).toString(),
+            slot_type: SlotType.Private,
+            start_time: startTime.toISOString(),
+            end_time: endTime.toISOString(),
+            description,
+            attachments: attachments || [],
+          },
+        });
+      }
+    } catch (error) {
+      console.error('Failed to send slot invitation to chat:', error);
+      // Don't throw error, slot creation was successful
+    }
+
     return savedSlot;
   }
 
@@ -119,6 +198,7 @@ export class SlotService {
       description?: string;
       start_time?: Date;
       end_time?: Date;
+      attachments?: any[];
     },
   ) {
     const slot = await this.slotModel.findById(slotId);

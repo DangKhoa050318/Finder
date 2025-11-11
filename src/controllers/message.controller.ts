@@ -71,7 +71,7 @@ export class MessageController {
             await this.notificationService.sendMessageNotification(
               member.user_id._id.toString(),
               sender.full_name,
-              dto.content,
+              dto.content || '(File đính kèm)',
               dto.chat_id,
             );
           }

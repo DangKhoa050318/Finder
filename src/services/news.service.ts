@@ -11,20 +11,37 @@ export class NewsService {
   ) {}
 
   // Create news (admin only)
-  async createNews(authorId: string, title: string, content: string) {
+  async createNews(
+    authorId: string,
+    title: string,
+    content: string,
+    attachments?: Array<{
+      filename: string;
+      originalName: string;
+      mimetype: string;
+      size: number;
+      url: string;
+    }>,
+  ) {
     const news = new this.newsModel({
       author_id: new Types.ObjectId(authorId),
       title,
       content,
+      attachments: attachments || [],
     });
 
-    return news.save();
+    const savedNews = await news.save();
+    
+    // Populate author info before returning
+    return this.newsModel
+      .findById(savedNews._id)
+      .populate('author_id', 'full_name email avatar');
   }
 
   // Update news (admin only)
   async updateNews(
     newsId: string,
-    updates: { title?: string; content?: string },
+    updates: { title?: string; content?: string; attachments?: any[] },
   ) {
     const newsObjectId = new Types.ObjectId(newsId);
 
@@ -60,7 +77,7 @@ export class NewsService {
       this.newsModel
         .find()
         .populate('author_id', 'full_name email avatar')
-        .sort({ created_at: -1 })
+        .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit),
       this.newsModel.countDocuments(),
@@ -94,7 +111,7 @@ export class NewsService {
     return this.newsModel
       .find()
       .populate('author_id', 'full_name email avatar')
-      .sort({ created_at: -1 })
+      .sort({ createdAt: -1 })
       .limit(limit);
   }
 
@@ -110,7 +127,7 @@ export class NewsService {
           $or: [{ title: searchRegex }, { content: searchRegex }],
         })
         .populate('author_id', 'full_name email avatar')
-        .sort({ created_at: -1 })
+        .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit),
       this.newsModel.countDocuments({

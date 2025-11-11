@@ -39,7 +39,12 @@ export class NewsController {
   @ApiResponse({ status: 201, description: 'Tin tức đã được tạo thành công' })
   @ApiResponse({ status: 403, description: 'Không có quyền truy cập' })
   async createNews(@User() { _id }: JwtPayload, @Body() dto: CreateNewsDto) {
-    return this.newsService.createNews(_id, dto.title, dto.content);
+    return this.newsService.createNews(
+      _id,
+      dto.title,
+      dto.content,
+      dto.attachments,
+    );
   }
 
   @Put(':newsId')

@@ -62,6 +62,7 @@ export class SlotController {
       dto.description || '',
       startTime,
       endTime,
+      dto.attachments,
     );
   }
 
@@ -89,6 +90,7 @@ export class SlotController {
       dto.description || '',
       startTime,
       endTime,
+      dto.attachments,
     );
   }
 

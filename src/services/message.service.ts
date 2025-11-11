@@ -46,6 +46,16 @@ export class MessageService {
     const chatObjectId = new Types.ObjectId(dto.chat_id);
     const senderObjectId = new Types.ObjectId(dto.sender_id);
 
+    // Validate: phải có ít nhất content hoặc attachments
+    const hasContent = dto.content && dto.content.trim().length > 0;
+    const hasAttachments = dto.attachments && dto.attachments.length > 0;
+    
+    if (!hasContent && !hasAttachments) {
+      throw new ForbiddenException(
+        'Tin nhắn phải có nội dung hoặc file đính kèm',
+      );
+    }
+
     // Kiểm tra sender có phải member của chat không
     const isParticipant = await this.chatParticipantModel.findOne({
       chat_id: chatObjectId,
@@ -80,8 +90,11 @@ export class MessageService {
     const message = await this.messageModel.create({
       chat_id: chatObjectId,
       sender_id: senderObjectId,
-      content: dto.content,
+      content: dto.content || '',
+      attachments: dto.attachments || [],
       status: MessageStatus.Sent,
+      message_type: dto.message_type,
+      metadata: dto.metadata,
     });
     await message.populate('sender_id', 'full_name avatar email');
 

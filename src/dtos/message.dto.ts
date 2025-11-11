@@ -7,8 +7,32 @@ import {
   IsMongoId,
   IsEnum,
   MaxLength,
+  ValidateNested,
+  ValidateIf,
 } from 'class-validator';
-import { MessageStatus } from '../models/message.schema';
+import { Type } from 'class-transformer';
+import { MessageStatus, MessageType } from '../models/message.schema';
+
+export class AttachmentDto {
+  @ApiProperty({ description: 'Tên file trên server' })
+  @IsString()
+  filename: string;
+
+  @ApiProperty({ description: 'Tên file gốc' })
+  @IsString()
+  originalName: string;
+
+  @ApiProperty({ description: 'MIME type' })
+  @IsString()
+  mimetype: string;
+
+  @ApiProperty({ description: 'Kích thước file (bytes)' })
+  size: number;
+
+  @ApiProperty({ description: 'URL truy cập file' })
+  @IsString()
+  url: string;
+}
 
 export class SendMessageDto {
   @ApiProperty({
@@ -28,27 +52,42 @@ export class SendMessageDto {
   sender_id: string;
 
   @ApiProperty({
-    description: 'Nội dung tin nhắn',
+    description: 'Nội dung tin nhắn (có thể để trống nếu có attachments)',
     example: 'Hello, how are you?',
+    required: false,
   })
+  @IsOptional()
   @IsString({ message: 'content phải là chuỗi' })
-  @IsNotEmpty({ message: 'content không được để trống' })
   @MaxLength(5000, { message: 'content không được vượt quá 5000 ký tự' })
-  content: string;
+  content?: string;
 
   @ApiProperty({
-    description: 'Danh sách file đính kèm (URLs)',
-    type: [String],
+    description: 'Danh sách file đính kèm',
+    type: [AttachmentDto],
     required: false,
-    example: [
-      'https://example.com/file1.pdf',
-      'https://example.com/image1.jpg',
-    ],
   })
   @IsOptional()
   @IsArray({ message: 'attachments phải là array' })
-  @IsString({ each: true, message: 'Mỗi attachment phải là string URL' })
-  attachments?: string[];
+  @ValidateNested({ each: true })
+  @Type(() => AttachmentDto)
+  attachments?: AttachmentDto[];
+
+  @ApiProperty({
+    description: 'Loại tin nhắn',
+    enum: MessageType,
+    example: MessageType.TEXT,
+    required: false,
+  })
+  @IsOptional()
+  @IsEnum(MessageType, { message: 'message_type không hợp lệ' })
+  message_type?: MessageType;
+
+  @ApiProperty({
+    description: 'Metadata bổ sung (cho slot invitation, etc)',
+    required: false,
+  })
+  @IsOptional()
+  metadata?: any;
 }
 
 export class GetMessagesQueryDto {
