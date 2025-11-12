@@ -4,7 +4,7 @@ import {
   ConflictException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import {
   MajorCourse,
   MajorCourseDocument,
@@ -204,16 +204,18 @@ export class MajorCourseService {
   }
 
   async getCoursesByMajor(major_id: string) {
+    const majorObjectId = new Types.ObjectId(major_id);
     const majorCourses = await this.majorCourseModel
-      .find({ major_id })
+      .find({ major_id: majorObjectId })
       .populate('course_id')
       .exec();
     return majorCourses.map((mc) => mc.course_id);
   }
 
   async getMajorsByCourse(course_id: string) {
+    const courseObjectId = new Types.ObjectId(course_id);
     const majorCourses = await this.majorCourseModel
-      .find({ course_id })
+      .find({ course_id: courseObjectId })
       .populate('major_id')
       .exec();
     return majorCourses.map((mc) => mc.major_id);
@@ -254,14 +256,16 @@ export class MajorCourseService {
   }
 
   async deleteByCourseAndMajor(major_id: string, course_id: string) {
+    const majorObjectId = new Types.ObjectId(major_id);
+    const courseObjectId = new Types.ObjectId(course_id);
     const majorCourse = await this.majorCourseModel
-      .findOne({ major_id, course_id })
+      .findOne({ major_id: majorObjectId, course_id: courseObjectId })
       .exec();
     if (!majorCourse) {
       throw new NotFoundException('Không tìm thấy mối quan hệ ngành-môn học');
     }
     await this.majorCourseModel
-      .findOneAndDelete({ major_id, course_id })
+      .findOneAndDelete({ major_id: majorObjectId, course_id: courseObjectId })
       .exec();
     return { message: 'Đã xóa mối quan hệ ngành-môn học thành công' };
   }
