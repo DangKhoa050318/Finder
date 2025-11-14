@@ -54,7 +54,7 @@ async function bootstrap() {
     }),
   );
 
-  app.listen(cfg.env.port, async () => {
+  app.listen(cfg.env.port, '0.0.0.0', async () => {
     console.log(
       `🚀[SERVER] Documentation http://localhost:${cfg.env.port}${cfg.env.swaggerPath}`,
     );

@@ -4,8 +4,10 @@ services:
     runtime: node
     plan: free
     buildCommand: npm install && npm run build
-    startCommand: npm run start:prod
-  envVars:
+    startCommand: node --max-old-space-size=460 dist/main.js
+    envVars:
+    - key: NODE_OPTIONS
+      value: --max-old-space-size=460
     - key: PORT
       value: 3000
     - key: NODE_ENV
