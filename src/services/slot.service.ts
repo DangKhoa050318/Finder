@@ -145,6 +145,8 @@ export class SlotService {
           type: 'slot_approval_request',
           title: 'Yêu cầu phê duyệt lịch học',
           description: notificationContent,
+          actionUrl: `/dashboard/slots/${(savedSlot._id as Types.ObjectId).toString()}`,
+          actionLabel: 'Xem chi tiết',
           metadata: {
             slot_id: (savedSlot._id as Types.ObjectId).toString(),
             group_id: groupId,
@@ -165,6 +167,8 @@ export class SlotService {
             type: notification.type,
             title: notification.title,
             description: notification.description,
+            actionUrl: notification.actionUrl,
+            actionLabel: notification.actionLabel,
             metadata: notification.metadata,
             createdAt: new Date(),
           },

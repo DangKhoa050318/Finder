@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { UploadApiErrorResponse, UploadApiResponse, v2 } from 'cloudinary';
-import toStream = require('buffer-to-stream');
+import { Readable } from 'stream';
 
 @Injectable()
 export class CloudinaryService {
@@ -15,11 +15,12 @@ export class CloudinaryService {
         },
         (error, result) => {
           if (error) return reject(error);
+          if (!result) return reject(new Error('Upload failed: No result returned'));
           resolve(result);
         },
       );
 
-      toStream(file.buffer).pipe(upload);
+      Readable.from(file.buffer).pipe(upload);
     });
   }
 
@@ -35,11 +36,12 @@ export class CloudinaryService {
         },
         (error, result) => {
           if (error) return reject(error);
+          if (!result) return reject(new Error('Upload failed: No result returned'));
           resolve(result);
         },
       );
 
-      toStream(file.buffer).pipe(upload);
+      Readable.from(file.buffer).pipe(upload);
     });
   }
 
