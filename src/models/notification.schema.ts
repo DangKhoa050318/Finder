@@ -13,6 +13,9 @@ export enum NotificationType {
   SLOT_CREATED = 'slot_created',
   SLOT_UPDATED = 'slot_updated',
   SLOT_CANCELLED = 'slot_cancelled',
+  SLOT_APPROVAL_REQUEST = 'slot_approval_request',  // Member tạo slot, chờ leader duyệt
+  SLOT_APPROVED = 'slot_approved',                  // Leader đã duyệt slot
+  SLOT_REJECTED = 'slot_rejected',                  // Leader từ chối slot
   REMINDER = 'reminder',
   NEWS = 'news',
   MESSAGE = 'message',

@@ -64,6 +64,10 @@ import { SlotGroup, SlotGroupSchema } from './models/slot-group.schema';
 import { SlotPrivate, SlotPrivateSchema } from './models/slot-private.schema';
 import { Attendance, AttendanceSchema } from './models/attendance.schema';
 import { Task, TaskSchema } from './models/task.schema';
+import { TaskAssignment, TaskAssignmentSchema } from './models/task-assignment.schema';
+import { UserPresence, UserPresenceSchema } from './models/user-presence.schema';
+import { TypingIndicator, TypingIndicatorSchema } from './models/typing-indicator.schema';
+import { EditLock, EditLockSchema } from './models/edit-lock.schema';
 import { Reminder, ReminderSchema } from './models/reminder.schema';
 import { Notification, NotificationSchema } from './models/notification.schema';
 import { GroupDocument, GroupDocumentSchema } from './models/group-document.schema';
@@ -85,6 +89,7 @@ import { EmailService } from './services/email.service';
 // WebSocket Gateways
 import { ChatGateway } from './gateways/chat.gateway';
 import { NotificationGateway } from './gateways/notification.gateway';
+import { PresenceGateway } from './gateways/presence.gateway';
 // Cron Jobs Module
 import { TasksModule } from './tasks/tasks.module';
 import { NotificationService } from './services/notification.service';
@@ -131,6 +136,10 @@ import { UploadModule } from './modules/upload/upload.module';
       { name: SlotPrivate.name, schema: SlotPrivateSchema },
       { name: Attendance.name, schema: AttendanceSchema },
       { name: Task.name, schema: TaskSchema },
+      { name: TaskAssignment.name, schema: TaskAssignmentSchema },
+      { name: UserPresence.name, schema: UserPresenceSchema },
+      { name: TypingIndicator.name, schema: TypingIndicatorSchema },
+      { name: EditLock.name, schema: EditLockSchema },
       { name: Reminder.name, schema: ReminderSchema },
       { name: Notification.name, schema: NotificationSchema },
       { name: GroupDocument.name, schema: GroupDocumentSchema },
@@ -205,6 +214,7 @@ import { UploadModule } from './modules/upload/upload.module';
     EmailService,
     ChatGateway,
     NotificationGateway,
+    PresenceGateway,
     NotificationService,
   ],
 })

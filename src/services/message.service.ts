@@ -66,23 +66,28 @@ export class MessageService {
       throw new ForbiddenException('Bạn không phải là thành viên của chat này');
     }
 
-    // Kiểm tra xem có block giữa sender và các recipients không
-    // Lấy danh sách participants của chat
-    const participants = await this.chatParticipantModel.find({
-      chat_id: chatObjectId,
-      user_id: { $ne: senderObjectId },
-    });
+    // Kiểm tra block CHỈ cho private chat
+    // Trong group chat, user đã chặn nhau vẫn có thể nhắn tin
+    const chat = await this.chatModel.findById(chatObjectId);
+    
+    if (chat && chat.chat_type === 'private') {
+      // Lấy danh sách participants của chat
+      const participants = await this.chatParticipantModel.find({
+        chat_id: chatObjectId,
+        user_id: { $ne: senderObjectId },
+      });
 
-    // Kiểm tra xem sender có bị chặn bởi bất kỳ recipient nào không
-    for (const participant of participants) {
-      const isBlocked = await this.blockService.hasBlockBetween(
-        dto.sender_id,
-        participant.user_id.toString(),
-      );
-      if (isBlocked) {
-        throw new ForbiddenException(
-          'Bạn không thể gửi tin nhắn vì bị chặn hoặc đã chặn người nhận',
+      // Kiểm tra xem sender có bị chặn bởi bất kỳ recipient nào không
+      for (const participant of participants) {
+        const isBlocked = await this.blockService.hasBlockBetween(
+          dto.sender_id,
+          participant.user_id.toString(),
         );
+        if (isBlocked) {
+          throw new ForbiddenException(
+            'Bạn không thể gửi tin nhắn vì bị chặn hoặc đã chặn người nhận',
+          );
+        }
       }
     }
 

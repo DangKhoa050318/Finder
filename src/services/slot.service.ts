@@ -8,16 +8,20 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
-import { Slot, SlotDocument, SlotType } from '../models/slot.schema';
+import { Slot, SlotDocument, SlotType, SlotStatus } from '../models/slot.schema';
 import { SlotGroup, SlotGroupDocument } from '../models/slot-group.schema';
 import {
   SlotPrivate,
   SlotPrivateDocument,
 } from '../models/slot-private.schema';
 import { Group, GroupDocument } from '../models/group.schema';
+import { User, UserDocument } from '../models/user.schema';
+import { Notification } from '../models/notification.schema';
+import { Task, TaskDocument } from '../models/task.schema';
 import { MessageService } from './message.service';
 import { ChatService } from './chat.service';
 import { MessageType } from '../models/message.schema';
+import { NotificationGateway } from '../gateways/notification.gateway';
 
 @Injectable()
 export class SlotService {
@@ -30,10 +34,18 @@ export class SlotService {
     private slotPrivateModel: Model<SlotPrivateDocument>,
     @InjectModel(Group.name)
     private groupModel: Model<GroupDocument>,
+    @InjectModel(User.name)
+    private userModel: Model<UserDocument>,
+    @InjectModel(Notification.name)
+    private notificationModel: Model<Notification>,
+    @InjectModel(Task.name)
+    private taskModel: Model<TaskDocument>,
     @Inject(forwardRef(() => MessageService))
     private messageService: MessageService,
     @Inject(forwardRef(() => ChatService))
     private chatService: ChatService,
+    @Inject(forwardRef(() => NotificationGateway))
+    private notificationGateway: NotificationGateway,
   ) {}
 
   // Create group slot
@@ -62,12 +74,9 @@ export class SlotService {
       throw new NotFoundException('Không tìm thấy nhóm');
     }
 
-    if (group.leader_id.toString() !== userId) {
-      throw new ForbiddenException(
-        'Chỉ lãnh đạo nhóm mới có thể tạo lịch học cho nhóm',
-      );
-    }
+    const isLeader = group.leader_id.toString() === userId;
 
+    // Member có thể tạo nhưng cần approval, leader tự động approved
     const slot = new this.slotModel({
       title,
       description,
@@ -76,6 +85,9 @@ export class SlotService {
       created_by: new Types.ObjectId(userId),
       slot_type: SlotType.Group,
       attachments: attachments || [],
+      status: isLeader ? SlotStatus.APPROVED : SlotStatus.PENDING,
+      approved_by: isLeader ? new Types.ObjectId(userId) : null,
+      approved_at: isLeader ? new Date() : null,
     });
 
     const savedSlot = await slot.save();
@@ -88,28 +100,77 @@ export class SlotService {
 
     await slotGroup.save();
 
-    // Send slot invitation to group chat
-    try {
-      const groupChat = await this.chatService.findGroupChatByGroupId(groupId);
-      if (groupChat) {
-        await this.messageService.sendMessage({
-          chat_id: (groupChat._id as Types.ObjectId).toString(),
-          sender_id: userId,
-          content: `📅 Lời mời tham gia lịch học: ${title}`,
-          message_type: MessageType.SLOT_INVITATION,
+    // Nếu leader tạo -> gửi invitation ngay, nếu member tạo -> chờ approval
+    if (isLeader) {
+      // Send slot invitation to group chat
+      try {
+        const groupChat = await this.chatService.findGroupChatByGroupId(groupId);
+        if (groupChat) {
+          // Get tasks for this slot
+          const tasks = await this.taskModel
+            .find({ slot_id: savedSlot._id })
+            .select('title description due_date priority status')
+            .lean();
+
+          await this.messageService.sendMessage({
+            chat_id: (groupChat._id as Types.ObjectId).toString(),
+            sender_id: userId,
+            content: `📅 Lời mời tham gia lịch học: ${title}`,
+            message_type: MessageType.SLOT_INVITATION,
+            metadata: {
+              slot_id: (savedSlot._id as Types.ObjectId).toString(),
+              slot_type: SlotType.Group,
+              start_time: startTime.toISOString(),
+              end_time: endTime.toISOString(),
+              description,
+              attachments: attachments || [],
+              tasks: tasks || [], // Include tasks in metadata
+            },
+          });
+        }
+      } catch (error) {
+        console.error('Error sending slot invitation to chat:', error);
+      }
+    } else {
+      // Member tạo slot -> gửi notification cho leader để approve
+      try {
+        const creator = await this.userModel.findById(userId);
+        const notificationContent = `${creator?.full_name || 'Thành viên'} đã tạo lịch học "${title}" và đang chờ phê duyệt`;
+        
+        const notification = await this.notificationModel.create({
+          user_id: group.leader_id,
+          type: 'slot_approval_request',
+          title: 'Yêu cầu phê duyệt lịch học',
+          description: notificationContent,
           metadata: {
             slot_id: (savedSlot._id as Types.ObjectId).toString(),
-            slot_type: SlotType.Group,
+            group_id: groupId,
+            creator_id: userId,
+            creator_name: creator?.full_name,
+            slot_title: title,
             start_time: startTime.toISOString(),
             end_time: endTime.toISOString(),
-            description,
-            attachments: attachments || [],
           },
+          isRead: false,
         });
+
+        // Emit real-time notification to leader
+        this.notificationGateway.sendNotificationToUser(
+          group.leader_id.toString(),
+          {
+            _id: notification._id,
+            type: notification.type,
+            title: notification.title,
+            description: notification.description,
+            metadata: notification.metadata,
+            createdAt: new Date(),
+          },
+        );
+
+        // TODO: Emit real-time notification via WebSocket if needed
+      } catch (error) {
+        console.error('Error sending approval notification:', error);
       }
-    } catch (error) {
-      console.error('Failed to send slot invitation to chat:', error);
-      // Don't fail the slot creation if message sending fails
     }
 
     return savedSlot;
@@ -225,6 +286,190 @@ export class SlotService {
     return slot.save();
   }
 
+  // Approve pending slot (Leader only)
+  async approveSlot(slotId: string, leaderId: string) {
+    const slot = await this.slotModel.findById(slotId);
+    if (!slot) {
+      throw new NotFoundException('Không tìm thấy slot');
+    }
+
+    if (slot.status !== SlotStatus.PENDING) {
+      throw new BadRequestException('Slot này không cần phê duyệt');
+    }
+
+    // Find group to verify leader
+    const slotGroup = await this.slotGroupModel.findOne({ slot_id: slot._id });
+    if (!slotGroup) {
+      throw new NotFoundException('Không tìm thấy thông tin nhóm của slot');
+    }
+
+    const group = await this.groupModel.findById(slotGroup.group_id);
+    if (!group) {
+      throw new NotFoundException('Không tìm thấy nhóm');
+    }
+
+    if (group.leader_id.toString() !== leaderId) {
+      throw new ForbiddenException('Chỉ lãnh đạo nhóm mới có thể phê duyệt slot');
+    }
+
+    // Update slot status
+    slot.status = SlotStatus.APPROVED;
+    slot.approved_by = new Types.ObjectId(leaderId);
+    slot.approved_at = new Date();
+    await slot.save();
+
+    // Send slot invitation to group chat
+    try {
+      const groupChat = await this.chatService.findGroupChatByGroupId(
+        slotGroup.group_id.toString(),
+      );
+      if (groupChat) {
+        // Get tasks for this slot
+        const tasks = await this.taskModel
+          .find({ slot_id: slot._id })
+          .select('title description due_date priority status')
+          .lean();
+
+        await this.messageService.sendMessage({
+          chat_id: (groupChat._id as Types.ObjectId).toString(),
+          sender_id: leaderId,
+          content: `📅 Lời mời tham gia lịch học: ${slot.title}`,
+          message_type: MessageType.SLOT_INVITATION,
+          metadata: {
+            slot_id: (slot._id as Types.ObjectId).toString(),
+            slot_type: SlotType.Group,
+            start_time: slot.start_time.toISOString(),
+            end_time: slot.end_time.toISOString(),
+            description: slot.description,
+            attachments: slot.attachments || [],
+            tasks: tasks || [], // Include tasks
+          },
+        });
+      }
+    } catch (error) {
+      console.error('Error sending slot invitation to chat:', error);
+    }
+
+    // Notify creator
+    try {
+      const leader = await this.userModel.findById(leaderId);
+      const notification = await this.notificationModel.create({
+        user_id: slot.created_by,
+        type: 'slot_approved',
+        title: 'Lịch học đã được phê duyệt',
+        description: `${leader?.full_name || 'Lãnh đạo nhóm'} đã phê duyệt lịch học "${slot.title}"`,
+        metadata: {
+          slot_id: (slot._id as Types.ObjectId).toString(),
+          group_id: slotGroup.group_id.toString(),
+          approved_by: leaderId,
+          approved_by_name: leader?.full_name,
+        },
+        isRead: false,
+      });
+
+      // Emit real-time notification to creator
+      this.notificationGateway.sendNotificationToUser(
+        slot.created_by.toString(),
+        {
+          _id: notification._id,
+          type: notification.type,
+          title: notification.title,
+          description: notification.description,
+          metadata: notification.metadata,
+          createdAt: new Date(),
+        },
+      );
+
+      // Emit slot status change event
+      this.notificationGateway.server.emit('slotStatusUpdated', {
+        slotId: (slot._id as Types.ObjectId).toString(),
+        status: SlotStatus.APPROVED,
+        approvedBy: leaderId,
+        approvedAt: slot.approved_at,
+      });
+    } catch (error) {
+      console.error('Error sending approval notification to creator:', error);
+    }
+
+    return slot;
+  }
+
+  // Reject pending slot (Leader only)
+  async rejectSlot(slotId: string, leaderId: string, reason: string) {
+    const slot = await this.slotModel.findById(slotId);
+    if (!slot) {
+      throw new NotFoundException('Không tìm thấy slot');
+    }
+
+    if (slot.status !== SlotStatus.PENDING) {
+      throw new BadRequestException('Slot này không thể từ chối');
+    }
+
+    // Find group to verify leader
+    const slotGroup = await this.slotGroupModel.findOne({ slot_id: slot._id });
+    if (!slotGroup) {
+      throw new NotFoundException('Không tìm thấy thông tin nhóm của slot');
+    }
+
+    const group = await this.groupModel.findById(slotGroup.group_id);
+    if (!group) {
+      throw new NotFoundException('Không tìm thấy nhóm');
+    }
+
+    if (group.leader_id.toString() !== leaderId) {
+      throw new ForbiddenException('Chỉ lãnh đạo nhóm mới có thể từ chối slot');
+    }
+
+    // Update slot status
+    slot.status = SlotStatus.REJECTED;
+    slot.rejection_reason = reason;
+    await slot.save();
+
+    // Notify creator
+    try {
+      const leader = await this.userModel.findById(leaderId);
+      const notification = await this.notificationModel.create({
+        user_id: slot.created_by,
+        type: 'slot_rejected',
+        title: 'Lịch học bị từ chối',
+        description: `${leader?.full_name || 'Lãnh đạo nhóm'} đã từ chối lịch học "${slot.title}"`,
+        metadata: {
+          slot_id: (slot._id as Types.ObjectId).toString(),
+          group_id: slotGroup.group_id.toString(),
+          rejected_by: leaderId,
+          rejected_by_name: leader?.full_name,
+          reason: reason,
+        },
+        isRead: false,
+      });
+
+      // Emit real-time notification to creator
+      this.notificationGateway.sendNotificationToUser(
+        slot.created_by.toString(),
+        {
+          _id: notification._id,
+          type: notification.type,
+          title: notification.title,
+          description: notification.description,
+          metadata: notification.metadata,
+          createdAt: new Date(),
+        },
+      );
+
+      // Emit slot status change event
+      this.notificationGateway.server.emit('slotStatusUpdated', {
+        slotId: (slot._id as Types.ObjectId).toString(),
+        status: SlotStatus.REJECTED,
+        rejectedBy: leaderId,
+        rejectionReason: reason,
+      });
+    } catch (error) {
+      console.error('Error sending rejection notification to creator:', error);
+    }
+
+    return slot;
+  }
+
   // Delete slot
   async deleteSlot(slotId: string, userId: string) {
     const slot = await this.slotModel.findById(slotId);
@@ -309,8 +554,25 @@ export class SlotService {
       .populate('created_by', 'full_name email avatar')
       .sort({ start_time: -1 });
 
+    // Get group slots where user has registered via Attendance
+    const attendanceModel = this.groupModel.db.model('Attendance');
+    const attendanceRecords = await attendanceModel
+      .find({ user_id: new Types.ObjectId(userId) })
+      .select('slot_id');
+
+    const registeredSlotIds = attendanceRecords.map((record) => record.slot_id);
+    const registeredGroupSlots = await this.slotModel
+      .find({
+        _id: { $in: registeredSlotIds },
+        slot_type: SlotType.Group,
+        created_by: { $ne: new Types.ObjectId(userId) },
+        ...filter,
+      })
+      .populate('created_by', 'full_name email avatar')
+      .sort({ start_time: -1 });
+
     // Combine and sort
-    const allSlots = [...createdSlots, ...privateSlots].sort(
+    const allSlots = [...createdSlots, ...privateSlots, ...registeredGroupSlots].sort(
       (a, b) => b.start_time.getTime() - a.start_time.getTime(),
     );
 
@@ -349,7 +611,24 @@ export class SlotService {
       .populate('created_by', 'full_name email avatar')
       .sort({ start_time: 1 });
 
-    return [...createdSlots, ...privateSlots].sort(
+    // Get group slots where user has registered via Attendance
+    const attendanceModel = this.groupModel.db.model('Attendance');
+    const attendanceRecords = await attendanceModel
+      .find({ user_id: new Types.ObjectId(userId) })
+      .select('slot_id');
+
+    const registeredSlotIds = attendanceRecords.map((record) => record.slot_id);
+    const registeredGroupSlots = await this.slotModel
+      .find({
+        _id: { $in: registeredSlotIds },
+        slot_type: SlotType.Group,
+        created_by: { $ne: new Types.ObjectId(userId) },
+        start_time: { $gte: now, $lte: nextWeek },
+      })
+      .populate('created_by', 'full_name email avatar')
+      .sort({ start_time: 1 });
+
+    return [...createdSlots, ...privateSlots, ...registeredGroupSlots].sort(
       (a, b) => a.start_time.getTime() - b.start_time.getTime(),
     );
   }
@@ -364,6 +643,72 @@ export class SlotService {
 
     return this.slotModel
       .find({ _id: { $in: slotIds } })
+      .populate('created_by', 'full_name email avatar')
+      .sort({ start_time: -1 });
+  }
+
+  // Get user's group slots (slots from groups user is member of)
+  async getUserGroupSlots(userId: string) {
+    // First, find all groups user is member of
+    const groupMemberModel = this.groupModel.db.model('GroupMember');
+    const userGroups = await groupMemberModel.find({ 
+      user_id: new Types.ObjectId(userId) 
+    });
+    
+    const groupIds = userGroups.map(gm => gm.group_id);
+
+    // Find all slots belonging to these groups
+    const slotGroups = await this.slotGroupModel.find({ 
+      group_id: { $in: groupIds } 
+    });
+    
+    const slotIds = slotGroups.map(sg => sg.slot_id);
+
+    return this.slotModel
+      .find({ 
+        _id: { $in: slotIds },
+        status: SlotStatus.APPROVED // Only show approved slots
+      })
+      .populate('created_by', 'full_name email avatar')
+      .sort({ start_time: -1 });
+  }
+
+  // Get user's private slots
+  async getUserPrivateSlots(userId: string) {
+    const privateSlotRecords = await this.slotPrivateModel.find({
+      $or: [
+        { user1_id: new Types.ObjectId(userId) }, 
+        { user2_id: new Types.ObjectId(userId) }
+      ],
+    });
+
+    const slotIds = privateSlotRecords.map(record => record.slot_id);
+
+    return this.slotModel
+      .find({ _id: { $in: slotIds } })
+      .populate('created_by', 'full_name email avatar')
+      .sort({ start_time: -1 });
+  }
+
+  // Get slots user has registered for (via attendance)
+  async getUserRegisteredSlots(userId: string) {
+    const attendanceModel = this.groupModel.db.model('Attendance');
+    const attendances = await attendanceModel.find({ 
+      user_id: new Types.ObjectId(userId) 
+    });
+
+    const slotIds = attendances.map(att => att.slot_id);
+
+    return this.slotModel
+      .find({ _id: { $in: slotIds } })
+      .populate('created_by', 'full_name email avatar')
+      .sort({ start_time: -1 });
+  }
+
+  // Get user's created slots
+  async getUserCreatedSlots(userId: string) {
+    return this.slotModel
+      .find({ created_by: new Types.ObjectId(userId) })
       .populate('created_by', 'full_name email avatar')
       .sort({ start_time: -1 });
   }

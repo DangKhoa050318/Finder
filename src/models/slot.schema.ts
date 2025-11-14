@@ -9,6 +9,13 @@ export enum SlotType {
   Private = 'private',
 }
 
+export enum SlotStatus {
+  PENDING = 'pending',     // Chờ duyệt (member tạo)
+  APPROVED = 'approved',   // Đã duyệt
+  REJECTED = 'rejected',   // Từ chối
+  ACTIVE = 'active',       // Đang diễn ra
+}
+
 class Attachment {
   @Prop({ required: true })
   filename: string;
@@ -84,6 +91,41 @@ export class Slot {
   })
   @Prop({ type: [Attachment], default: [] })
   attachments: Attachment[];
+
+  @ApiProperty({
+    description: 'Trạng thái slot',
+    enum: SlotStatus,
+    example: SlotStatus.APPROVED,
+  })
+  @Prop({
+    type: String,
+    enum: Object.values(SlotStatus),
+    default: SlotStatus.APPROVED,
+  })
+  status: SlotStatus;
+
+  @ApiProperty({
+    description: 'ID người duyệt (leader)',
+    type: String,
+    nullable: true,
+  })
+  @Prop({ type: Types.ObjectId, ref: 'User', default: null })
+  approved_by: Types.ObjectId | null;
+
+  @ApiProperty({
+    description: 'Thời gian duyệt',
+    example: '2025-10-17T13:00:00.000Z',
+    nullable: true,
+  })
+  @Prop({ type: Date, default: null })
+  approved_at: Date | null;
+
+  @ApiProperty({
+    description: 'Lý do từ chối',
+    nullable: true,
+  })
+  @Prop({ type: String, default: null })
+  rejection_reason: string | null;
 }
 
 export const SlotSchema = SchemaFactory.createForClass(Slot);

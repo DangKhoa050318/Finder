@@ -207,4 +207,126 @@ export class TaskController {
   ) {
     return this.taskService.updateTaskStatus(taskId, _id, status);
   }
+
+  // ==================== PHASE 2: TASK ASSIGNMENT ENDPOINTS ====================
+
+  @Post('slot/:slotId')
+  @ApiOperation({ summary: 'Tạo task cho slot (Creator only)' })
+  @ApiParam({ name: 'slotId', description: 'ID của slot' })
+  @ApiResponse({
+    status: 201,
+    description: 'Task đã được tạo cho slot',
+    type: TaskResponseDto,
+  })
+  async createSlotTask(
+    @User() { _id }: JwtPayload,
+    @Param('slotId') slotId: string,
+    @Body() dto: CreateTaskDto,
+  ) {
+    const dueDate = dto.due_date ? new Date(dto.due_date) : undefined;
+    return this.taskService.createSlotTask(
+      _id,
+      slotId,
+      dto.title,
+      dto.description,
+      dueDate,
+      dto.priority,
+    );
+  }
+
+  @Get('slot/:slotId')
+  @ApiOperation({ summary: 'Lấy tất cả tasks của slot' })
+  @ApiParam({ name: 'slotId', description: 'ID của slot' })
+  @ApiResponse({
+    status: 200,
+    description: 'Danh sách tasks của slot',
+    type: TaskListResponseDto,
+  })
+  async getSlotTasks(@Param('slotId') slotId: string) {
+    return this.taskService.getSlotTasks(slotId);
+  }
+
+  @Post(':taskId/assign')
+  @ApiOperation({ summary: 'Assign task cho user(s)' })
+  @ApiParam({ name: 'taskId', description: 'ID của task' })
+  @ApiResponse({
+    status: 200,
+    description: 'Task đã được assign',
+  })
+  async assignTask(
+    @User() { _id }: JwtPayload,
+    @Param('taskId') taskId: string,
+    @Body('userIds') userIds: string[],
+  ) {
+    return this.taskService.assignTask(taskId, _id, userIds);
+  }
+
+  @Get(':taskId/assignments')
+  @ApiOperation({ summary: 'Lấy danh sách assignments của task' })
+  @ApiParam({ name: 'taskId', description: 'ID của task' })
+  @ApiResponse({
+    status: 200,
+    description: 'Danh sách assignments',
+  })
+  async getTaskAssignments(@Param('taskId') taskId: string) {
+    return this.taskService.getTaskAssignments(taskId);
+  }
+
+  @Delete(':taskId/assign/:userId')
+  @ApiOperation({ summary: 'Unassign user khỏi task' })
+  @ApiParam({ name: 'taskId', description: 'ID của task' })
+  @ApiParam({ name: 'userId', description: 'ID của user cần unassign' })
+  @ApiResponse({
+    status: 200,
+    description: 'Đã unassign user',
+  })
+  async unassignTask(
+    @User() { _id }: JwtPayload,
+    @Param('taskId') taskId: string,
+    @Param('userId') userId: string,
+  ) {
+    return this.taskService.unassignTask(taskId, userId, _id);
+  }
+
+  @Get('my-assignments')
+  @ApiOperation({ summary: 'Lấy danh sách tasks được assign cho user' })
+  @ApiResponse({
+    status: 200,
+    description: 'Danh sách assignments của user',
+  })
+  async getUserAssignedTasks(@User() { _id }: JwtPayload) {
+    return this.taskService.getUserAssignedTasks(_id);
+  }
+
+  @Put('assignments/:assignmentId/status')
+  @ApiOperation({ summary: 'Cập nhật trạng thái assignment' })
+  @ApiParam({ name: 'assignmentId', description: 'ID của assignment' })
+  @ApiResponse({
+    status: 200,
+    description: 'Đã cập nhật trạng thái assignment',
+  })
+  async updateAssignmentStatus(
+    @User() { _id }: JwtPayload,
+    @Param('assignmentId') assignmentId: string,
+    @Body('status') status: string,
+    @Body('completionNote') completionNote?: string,
+  ) {
+    return this.taskService.updateAssignmentStatus(
+      assignmentId,
+      _id,
+      status as any,
+      completionNote,
+    );
+  }
+
+  @Get('slot/:slotId/stats')
+  @ApiOperation({ summary: 'Lấy thống kê task assignments của slot' })
+  @ApiParam({ name: 'slotId', description: 'ID của slot' })
+  @ApiResponse({
+    status: 200,
+    description: 'Thống kê task assignments',
+  })
+  async getSlotTaskStats(@Param('slotId') slotId: string) {
+    return this.taskService.getSlotTaskStats(slotId);
+  }
 }

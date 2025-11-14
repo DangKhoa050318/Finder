@@ -150,6 +150,50 @@ export class SlotController {
     return this.slotService.getUserSlots(_id, slotType);
   }
 
+  @Get('my-slots/created')
+  @ApiOperation({ summary: 'Lấy danh sách slot user đã tạo' })
+  @ApiResponse({
+    status: 200,
+    description: 'Danh sách slot đã tạo',
+    type: SlotListResponseDto,
+  })
+  async getUserCreatedSlots(@User() { _id }: JwtPayload) {
+    return this.slotService.getUserCreatedSlots(_id);
+  }
+
+  @Get('my-slots/group')
+  @ApiOperation({ summary: 'Lấy danh sách slot nhóm của user' })
+  @ApiResponse({
+    status: 200,
+    description: 'Danh sách slot nhóm',
+    type: SlotListResponseDto,
+  })
+  async getUserGroupSlots(@User() { _id }: JwtPayload) {
+    return this.slotService.getUserGroupSlots(_id);
+  }
+
+  @Get('my-slots/private')
+  @ApiOperation({ summary: 'Lấy danh sách slot riêng tư của user' })
+  @ApiResponse({
+    status: 200,
+    description: 'Danh sách slot riêng tư',
+    type: SlotListResponseDto,
+  })
+  async getUserPrivateSlots(@User() { _id }: JwtPayload) {
+    return this.slotService.getUserPrivateSlots(_id);
+  }
+
+  @Get('my-slots/registered')
+  @ApiOperation({ summary: 'Lấy danh sách slot user đã đăng ký tham gia' })
+  @ApiResponse({
+    status: 200,
+    description: 'Danh sách slot đã đăng ký',
+    type: SlotListResponseDto,
+  })
+  async getUserRegisteredSlots(@User() { _id }: JwtPayload) {
+    return this.slotService.getUserRegisteredSlots(_id);
+  }
+
   @Get('upcoming')
   @ApiOperation({ summary: 'Lấy slot sắp tới (7 ngày tới)' })
   @ApiResponse({
@@ -171,6 +215,55 @@ export class SlotController {
   })
   async getGroupSlots(@Param('groupId') groupId: string) {
     return this.slotService.getGroupSlots(groupId);
+  }
+
+  @Post(':slotId/approve')
+  @ApiOperation({ summary: 'Phê duyệt slot pending (Leader only)' })
+  @ApiParam({ name: 'slotId', description: 'ID của slot cần phê duyệt' })
+  @ApiResponse({
+    status: 200,
+    description: 'Slot đã được phê duyệt thành công',
+    type: SlotResponseDto,
+  })
+  @ApiResponse({ status: 404, description: 'Không tìm thấy slot' })
+  @ApiResponse({
+    status: 403,
+    description: 'Chỉ lãnh đạo nhóm mới có thể phê duyệt',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Slot không cần phê duyệt',
+  })
+  async approveSlot(
+    @Param('slotId') slotId: string,
+    @User() user: JwtPayload,
+  ) {
+    return this.slotService.approveSlot(slotId, user._id);
+  }
+
+  @Post(':slotId/reject')
+  @ApiOperation({ summary: 'Từ chối slot pending (Leader only)' })
+  @ApiParam({ name: 'slotId', description: 'ID của slot cần từ chối' })
+  @ApiResponse({
+    status: 200,
+    description: 'Slot đã bị từ chối',
+    type: SlotResponseDto,
+  })
+  @ApiResponse({ status: 404, description: 'Không tìm thấy slot' })
+  @ApiResponse({
+    status: 403,
+    description: 'Chỉ lãnh đạo nhóm mới có thể từ chối',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Slot không thể từ chối',
+  })
+  async rejectSlot(
+    @Param('slotId') slotId: string,
+    @Body('reason') reason: string,
+    @User() user: JwtPayload,
+  ) {
+    return this.slotService.rejectSlot(slotId, user._id, reason);
   }
 
   @Get(':slotId')
