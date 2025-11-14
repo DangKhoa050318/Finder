@@ -2,6 +2,8 @@ import { Global, Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigService } from './config.service';
+import { CloudinaryProvider } from './cloudinary.provider';
+import { CloudinaryService } from './cloudinary.service';
 
 const imports = [
   ConfigModule.forRoot({
@@ -22,7 +24,7 @@ const imports = [
 @Global()
 @Module({
   imports,
-  providers: [ConfigService],
-  exports: [ConfigService, JwtModule],
+  providers: [ConfigService, CloudinaryProvider, CloudinaryService],
+  exports: [ConfigService, JwtModule, CloudinaryService],
 })
 export class GlobalModule {}

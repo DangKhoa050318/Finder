@@ -5,26 +5,32 @@ services:
     plan: free
     buildCommand: npm install && npm run build
     startCommand: npm run start:prod
-    envVars:
-      - key: NODE_ENV
-        value: production
-      - key: PORT
-        value: 3000
-      - key: MONGODB_URI
-        sync: false
-      - key: JWT_SECRET
-        sync: false
-      - key: JWT_EXPIRES_IN
-        value: 7d
-      - key: EMAIL_HOST
-        sync: false
-      - key: EMAIL_PORT
-        sync: false
-      - key: EMAIL_USER
-        sync: false
-      - key: EMAIL_PASSWORD
-        sync: false
-      - key: EMAIL_FROM
-        sync: false
-      - key: FRONTEND_URL
-        sync: false
+  envVars:
+    - key: PORT
+      value: 3000
+    - key: NODE_ENV
+      value: production
+    - key: MONGODB_URI
+      sync: false
+    - key: JWT_SECRET
+      sync: false
+    - key: JWT_EXPIRES_IN
+      value: 7d
+    - key: EMAIL_HOST
+      sync: false
+    - key: EMAIL_PORT
+      sync: false
+    - key: EMAIL_USER
+      sync: false
+    - key: EMAIL_PASSWORD
+      sync: false
+    - key: EMAIL_FROM
+      sync: false
+    - key: FRONTEND_URL
+      sync: false
+    - key: CLOUDINARY_CLOUD_NAME
+      sync: false
+    - key: CLOUDINARY_API_KEY
+      sync: false
+    - key: CLOUDINARY_API_SECRET
+      sync: false

@@ -7,6 +7,7 @@ import { MajorController } from './controllers/major.controller';
 import { CourseController } from './controllers/course.controller';
 import { MajorCourseController } from './controllers/major_course.controller';
 import { UserController } from './controllers/user.controller';
+import { UploadController } from './controllers/upload.controller';
 import { AllExceptionFilter } from './exceptions/all.exception';
 import { HttpExceptionFilter } from './exceptions/http.exception';
 import { MongoExceptionFilter } from './exceptions/mongo.exception';
@@ -166,6 +167,7 @@ import { UploadModule } from './modules/upload/upload.module';
     MessageController,
     GroupDocumentController,
     NotificationController,
+    UploadController,
   ],
   providers: [
     {

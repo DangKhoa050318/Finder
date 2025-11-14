@@ -41,6 +41,9 @@ export class ConfigService {
       swaggerPath: this.getString('SWAGGER_PATH') ?? '/api',
       mailUser: this.getString('MAIL_USER'),
       mailPass: this.getString('MAIL_PASS'),
+      cloudinaryCloudName: this.getString('CLOUDINARY_CLOUD_NAME'),
+      cloudinaryApiKey: this.getString('CLOUDINARY_API_KEY'),
+      cloudinaryApiSecret: this.getString('CLOUDINARY_API_SECRET'),
     };
   }
   private get(key: string): string {
