@@ -176,6 +176,29 @@ export class User {
   @Prop({ type: Date, required: false })
   otpExpiry?: Date;
 
+  @ApiProperty({
+    description: 'Trạng thái xác thực email',
+    default: false,
+    example: true,
+  })
+  @Prop({ type: Boolean, default: false })
+  isVerified: boolean;
+
+  @ApiProperty({
+    description: 'Provider đăng nhập (local, google)',
+    default: 'local',
+    example: 'google',
+  })
+  @Prop({ type: String, default: 'local', enum: ['local', 'google'] })
+  provider: string;
+
+  @ApiProperty({
+    description: 'Google ID nếu đăng nhập bằng Google',
+    required: false,
+  })
+  @Prop({ type: String, required: false })
+  googleId?: string;
+
   comparePassword: (password: string) => Promise<boolean>;
 }
 

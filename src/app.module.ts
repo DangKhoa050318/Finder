@@ -18,6 +18,7 @@ import { Course, CourseSchema } from './models/course.schema';
 import { Major, MajorSchema } from './models/major.schema';
 import { MajorCourse, MajorCourseSchema } from './models/major_course.schema';
 import { UserSchemaModule } from './models/user.schema';
+import { PendingRegistrationSchemaModule } from './models/pending-registration.schema';
 import { AuthService } from './services/auth.service';
 import { CourseService } from './services/course.service';
 import { MajorService } from './services/major.service';
@@ -114,6 +115,7 @@ import { UploadModule } from './modules/upload/upload.module';
     }),
 
     UserSchemaModule,
+    PendingRegistrationSchemaModule,
     MongooseModule.forFeature([
       // Existing schemas
       { name: Course.name, schema: CourseSchema },

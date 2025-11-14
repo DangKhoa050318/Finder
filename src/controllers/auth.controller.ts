@@ -17,6 +17,14 @@ import {
   VerifyOtpResponseDto,
   ResetPasswordDto,
   ResetPasswordResponseDto,
+  VerifyRegistrationOtpDto,
+  VerifyRegistrationOtpResponseDto,
+  ResendRegistrationOtpDto,
+  ResendRegistrationOtpResponseDto,
+  GoogleAuthDto,
+  GoogleAuthResponseDto,
+  SetPasswordAfterGoogleDto,
+  SetPasswordAfterGoogleResponseDto,
 } from '../dtos/auth.dto';
 import { UserResponseDto } from '../dtos/user.dto';
 import { Public } from '../decorators/public.decorator';
@@ -51,12 +59,79 @@ export class AuthController {
   @ApiOperation({ summary: 'Đăng ký tài khoản' })
   @ApiResponse({
     status: 201,
-    description: 'Đăng ký thành công',
+    description: 'OTP đã được gửi đến email',
     type: RegisterResponseDto,
   })
-  @ApiResponse({ status: 409, description: 'Email đã tồn tại' })
+  @ApiResponse({ status: 409, description: 'Email đã được đăng ký' })
   async register(@Body() registerDto: RegisterDto) {
     return this.authService.register(registerDto);
+  }
+
+  @Public()
+  @Post('verify-registration-otp')
+  @ApiOperation({ summary: 'Xác thực OTP đăng ký và tạo tài khoản' })
+  @ApiResponse({
+    status: 200,
+    description: 'Email đã được xác thực',
+    type: VerifyRegistrationOtpResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Mã OTP không hợp lệ hoặc đã hết hạn',
+  })
+  async verifyRegistrationOtp(@Body() verifyDto: VerifyRegistrationOtpDto) {
+    return this.authService.verifyRegistrationOtp(verifyDto.email, verifyDto.otp);
+  }
+
+  @Public()
+  @Post('resend-registration-otp')
+  @ApiOperation({ summary: 'Gửi lại mã OTP đăng ký' })
+  @ApiResponse({
+    status: 200,
+    description: 'Mã OTP mới đã được gửi',
+    type: ResendRegistrationOtpResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Không tìm thấy yêu cầu đăng ký',
+  })
+  async resendRegistrationOtp(@Body() resendDto: ResendRegistrationOtpDto) {
+    return this.authService.resendRegistrationOtp(resendDto.email);
+  }
+
+  @Public()
+  @Post('google')
+  @ApiOperation({ summary: 'Đăng nhập/Đăng ký bằng Google' })
+  @ApiResponse({
+    status: 200,
+    description: 'Xác thực Google thành công',
+    type: GoogleAuthResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Token Google không hợp lệ',
+  })
+  async googleAuth(@Body() googleAuthDto: GoogleAuthDto) {
+    return this.authService.googleAuth(googleAuthDto.idToken);
+  }
+
+  @Public()
+  @Post('set-password-after-google')
+  @ApiOperation({ summary: 'Đặt mật khẩu sau khi đăng ký bằng Google' })
+  @ApiResponse({
+    status: 200,
+    description: 'Đặt mật khẩu thành công',
+    type: SetPasswordAfterGoogleResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Email chưa được xác thực hoặc không hợp lệ',
+  })
+  async setPasswordAfterGoogle(@Body() setPasswordDto: SetPasswordAfterGoogleDto) {
+    return this.authService.setPasswordAfterGoogle(
+      setPasswordDto.email,
+      setPasswordDto.password,
+    );
   }
 
   @Get('me')
