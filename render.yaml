@@ -3,8 +3,8 @@ services:
     name: study-together-api
     runtime: node
     plan: free
-    buildCommand: npm ci && npm run build
-    startCommand: npm run start:prod
+    buildCommand: npm ci --omit=dev && npm run build
+    startCommand: node --max-old-space-size=460 dist/main.js
     envVars:
     - key: NODE_OPTIONS
       value: --max-old-space-size=460
