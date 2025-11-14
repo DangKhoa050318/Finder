@@ -31,10 +31,13 @@ export class ReminderService {
       throw new BadRequestException('Thời gian nhắc nhở phải ở tương lai');
     }
 
+    const slotObjectId = new Types.ObjectId(slotId);
+    const userObjectId = new Types.ObjectId(userId);
+
     // Check for duplicate
     const existing = await this.reminderModel.findOne({
-      slot_id: slotId,
-      user_id: userId,
+      slot_id: slotObjectId,
+      user_id: userObjectId,
       remind_at: remindAt,
       status: ReminderStatus.Pending,
     });
@@ -44,8 +47,8 @@ export class ReminderService {
     }
 
     const reminder = new this.reminderModel({
-      slot_id: new Types.ObjectId(slotId),
-      user_id: new Types.ObjectId(userId),
+      slot_id: slotObjectId,
+      user_id: userObjectId,
       remind_at: remindAt,
       method,
       message: customMessage || 'Slot sắp bắt đầu!',
@@ -180,7 +183,8 @@ export class ReminderService {
     limit: number = 20,
   ) {
     const skip = (page - 1) * limit;
-    const filter: any = { user_id: userId };
+    const userObjectId = new Types.ObjectId(userId);
+    const filter: any = { user_id: userObjectId };
 
     if (status) {
       filter.status = status;
@@ -206,8 +210,9 @@ export class ReminderService {
 
   // Get reminders for a slot
   async getSlotReminders(slotId: string) {
+    const slotObjectId = new Types.ObjectId(slotId);
     return this.reminderModel
-      .find({ slot_id: slotId })
+      .find({ slot_id: slotObjectId })
       .populate('user_id', 'full_name email avatar')
       .sort({ remind_at: 1 });
   }

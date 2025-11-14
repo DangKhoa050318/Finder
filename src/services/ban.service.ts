@@ -74,8 +74,9 @@ export class BanService {
 
   // Get active ban for a user
   async getActiveBan(userId: string): Promise<BanDocument | null> {
+    const userObjectId = new Types.ObjectId(userId);
     return this.banModel.findOne({
-      user_id: userId,
+      user_id: userObjectId,
       status: BanStatus.Active,
     });
   }
@@ -122,8 +123,9 @@ export class BanService {
 
   // Get ban history for a user
   async getUserBanHistory(userId: string) {
+    const userObjectId = new Types.ObjectId(userId);
     return this.banModel
-      .find({ user_id: userId })
+      .find({ user_id: userObjectId })
       .populate('banned_by', 'full_name email avatar')
       .sort({ date: -1 });
   }

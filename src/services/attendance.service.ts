@@ -20,10 +20,13 @@ export class AttendanceService {
 
   // Register for a slot
   async registerForSlot(userId: string, slotId: string) {
+    const userObjectId = new Types.ObjectId(userId);
+    const slotObjectId = new Types.ObjectId(slotId);
+
     // Check if already registered
     const existing = await this.attendanceModel.findOne({
-      user_id: userId,
-      slot_id: slotId,
+      user_id: userObjectId,
+      slot_id: slotObjectId,
     });
 
     if (existing) {
@@ -31,8 +34,8 @@ export class AttendanceService {
     }
 
     const attendance = new this.attendanceModel({
-      user_id: new Types.ObjectId(userId),
-      slot_id: new Types.ObjectId(slotId),
+      user_id: userObjectId,
+      slot_id: slotObjectId,
       status: AttendanceStatus.Registered,
     });
 
@@ -41,9 +44,12 @@ export class AttendanceService {
 
   // Mark attendance - start attending
   async startAttending(userId: string, slotId: string) {
+    const userObjectId = new Types.ObjectId(userId);
+    const slotObjectId = new Types.ObjectId(slotId);
+
     const attendance = await this.attendanceModel.findOne({
-      user_id: userId,
-      slot_id: slotId,
+      user_id: userObjectId,
+      slot_id: slotObjectId,
     });
 
     if (!attendance) {
@@ -62,9 +68,12 @@ export class AttendanceService {
 
   // Mark as completed
   async completeAttendance(userId: string, slotId: string) {
+    const userObjectId = new Types.ObjectId(userId);
+    const slotObjectId = new Types.ObjectId(slotId);
+
     const attendance = await this.attendanceModel.findOne({
-      user_id: userId,
-      slot_id: slotId,
+      user_id: userObjectId,
+      slot_id: slotObjectId,
     });
 
     if (!attendance) {
@@ -85,9 +94,12 @@ export class AttendanceService {
 
   // Mark as absent
   async markAbsent(userId: string, slotId: string) {
+    const userObjectId = new Types.ObjectId(userId);
+    const slotObjectId = new Types.ObjectId(slotId);
+
     const attendance = await this.attendanceModel.findOne({
-      user_id: userId,
-      slot_id: slotId,
+      user_id: userObjectId,
+      slot_id: slotObjectId,
     });
 
     if (!attendance) {
@@ -101,9 +113,12 @@ export class AttendanceService {
 
   // Cancel registration
   async cancelRegistration(userId: string, slotId: string) {
+    const userObjectId = new Types.ObjectId(userId);
+    const slotObjectId = new Types.ObjectId(slotId);
+
     const result = await this.attendanceModel.findOneAndDelete({
-      user_id: userId,
-      slot_id: slotId,
+      user_id: userObjectId,
+      slot_id: slotObjectId,
       status: AttendanceStatus.Registered,
     });
 
@@ -124,7 +139,8 @@ export class AttendanceService {
     limit: number = 20,
   ) {
     const skip = (page - 1) * limit;
-    const filter: any = { user_id: userId };
+    const userObjectId = new Types.ObjectId(userId);
+    const filter: any = { user_id: userObjectId };
 
     if (status) {
       filter.status = status;
@@ -150,7 +166,8 @@ export class AttendanceService {
 
   // Get slot attendees
   async getSlotAttendees(slotId: string, status?: AttendanceStatus) {
-    const filter: any = { slot_id: slotId };
+    const slotObjectId = new Types.ObjectId(slotId);
+    const filter: any = { slot_id: slotObjectId };
 
     if (status) {
       filter.status = status;
@@ -164,7 +181,10 @@ export class AttendanceService {
 
   // Get attendance statistics for a slot
   async getSlotStatistics(slotId: string) {
-    const attendances = await this.attendanceModel.find({ slot_id: slotId });
+    const slotObjectId = new Types.ObjectId(slotId);
+    const attendances = await this.attendanceModel.find({
+      slot_id: slotObjectId,
+    });
 
     const stats = {
       total: attendances.length,
@@ -196,18 +216,24 @@ export class AttendanceService {
 
   // Check if user is registered for slot
   async isRegistered(userId: string, slotId: string): Promise<boolean> {
+    const userObjectId = new Types.ObjectId(userId);
+    const slotObjectId = new Types.ObjectId(slotId);
+
     const attendance = await this.attendanceModel.findOne({
-      user_id: userId,
-      slot_id: slotId,
+      user_id: userObjectId,
+      slot_id: slotObjectId,
     });
     return !!attendance;
   }
 
   // Get user's attendance for specific slot
   async getUserSlotAttendance(userId: string, slotId: string) {
+    const userObjectId = new Types.ObjectId(userId);
+    const slotObjectId = new Types.ObjectId(slotId);
+
     return this.attendanceModel.findOne({
-      user_id: userId,
-      slot_id: slotId,
+      user_id: userObjectId,
+      slot_id: slotObjectId,
     });
   }
 }

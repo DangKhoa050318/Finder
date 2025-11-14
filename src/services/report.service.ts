@@ -46,16 +46,18 @@ export class ReportService {
 
   // Get reports for a specific user (admin only)
   async getReportsByReportedUser(reportedId: string) {
+    const reportedObjectId = new Types.ObjectId(reportedId);
     return this.reportModel
-      .find({ reported_id: reportedId })
+      .find({ reported_id: reportedObjectId })
       .populate('reporter_id', 'full_name email avatar')
       .sort({ date: -1 });
   }
 
   // Get reports made by a user
   async getReportsByReporter(reporterId: string) {
+    const reporterObjectId = new Types.ObjectId(reporterId);
     return this.reportModel
-      .find({ reporter_id: reporterId })
+      .find({ reporter_id: reporterObjectId })
       .populate('reported_id', 'full_name email avatar')
       .sort({ date: -1 });
   }
@@ -87,6 +89,7 @@ export class ReportService {
 
   // Get report count for a user (useful for admin dashboard)
   async getReportCount(userId: string): Promise<number> {
-    return this.reportModel.countDocuments({ reported_id: userId });
+    const userObjectId = new Types.ObjectId(userId);
+    return this.reportModel.countDocuments({ reported_id: userObjectId });
   }
 }
