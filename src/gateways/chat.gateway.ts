@@ -8,8 +8,9 @@ import {
   OnGatewayDisconnect,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-import { Logger } from '@nestjs/common';
+import { Logger, Inject, forwardRef } from '@nestjs/common';
 import { MessageService } from '../services/message.service';
+import { BlockService } from '../services/block.service';
 
 @WebSocketGateway({
   cors: {
@@ -27,7 +28,11 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private readonly logger = new Logger(ChatGateway.name);
   private userSockets: Map<string, string> = new Map(); // userId -> socketId
 
-  constructor(private readonly messageService: MessageService) {}
+  constructor(
+    private readonly messageService: MessageService,
+    @Inject(forwardRef(() => BlockService))
+    private readonly blockService: BlockService,
+  ) {}
 
   handleConnection(client: Socket) {
     const userId = client.handshake.query.userId as string;
@@ -56,9 +61,11 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @SubscribeMessage('joinChat')
   async handleJoinChat(
     @ConnectedSocket() client: Socket,
-    @MessageBody() data: { chat_id: string },
+    @MessageBody() data: { chat_id: string; user_id: string },
   ) {
     const chatId = data.chat_id;
+    const userId = data.user_id;
+    
     client.join(`chat_${chatId}`);
     this.logger.log(`📥 Socket ${client.id} joined chat ${chatId}`);
 
@@ -82,6 +89,69 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
 
     return { event: 'joinedChat', data: { chatId } };
+  }
+
+  /**
+   * Kiểm tra trạng thái block giữa 2 users
+   */
+  @SubscribeMessage('checkBlockStatus')
+  async handleCheckBlockStatus(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { user_id: string; other_user_id: string },
+  ) {
+    try {
+      const blockStatus = await this.blockService.getBlockStatus(
+        data.user_id,
+        data.other_user_id,
+      );
+
+      // Gửi block status về client
+      client.emit('blockStatusUpdated', {
+        userId: data.user_id,
+        otherUserId: data.other_user_id,
+        ...blockStatus,
+      });
+
+      this.logger.log(
+        `🔒 Block status checked between ${data.user_id} and ${data.other_user_id}`,
+      );
+
+      return {
+        event: 'blockStatusChecked',
+        data: blockStatus,
+      };
+    } catch (error) {
+      this.logger.error(`❌ Error checking block status: ${error.message}`);
+      client.emit('error', {
+        message: 'Không thể kiểm tra trạng thái chặn',
+      });
+    }
+  }
+
+  /**
+   * Notify khi có user block/unblock
+   */
+  notifyBlockStatusChanged(
+    blockerId: string,
+    blockedId: string,
+    action: 'blocked' | 'unblocked',
+  ) {
+    // Gửi đến cả 2 users
+    this.server.to(`user_${blockerId}`).emit('blockStatusChanged', {
+      action,
+      userId: blockedId,
+      isBlocker: true,
+    });
+
+    this.server.to(`user_${blockedId}`).emit('blockStatusChanged', {
+      action,
+      userId: blockerId,
+      isBlocker: false,
+    });
+
+    this.logger.log(
+      `🔒 Notified block status changed: ${blockerId} ${action} ${blockedId}`,
+    );
   }
 
   /**
