@@ -100,7 +100,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @MessageBody() data: { user_id: string; other_user_id: string },
   ) {
     try {
-      const blockStatus = await this.blockService.getBlockStatus(
+      const hasBlock = await this.blockService.hasBlockBetween(
         data.user_id,
         data.other_user_id,
       );
@@ -109,16 +109,16 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       client.emit('blockStatusUpdated', {
         userId: data.user_id,
         otherUserId: data.other_user_id,
-        ...blockStatus,
+        isBlocked: hasBlock,
       });
 
       this.logger.log(
-        `🔒 Block status checked between ${data.user_id} and ${data.other_user_id}`,
+        `🔒 Block status checked between ${data.user_id} and ${data.other_user_id}: ${hasBlock}`,
       );
 
       return {
         event: 'blockStatusChecked',
-        data: blockStatus,
+        data: { isBlocked: hasBlock },
       };
     } catch (error) {
       this.logger.error(`❌ Error checking block status: ${error.message}`);
